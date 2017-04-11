@@ -12,6 +12,8 @@
                    (error 'bigrams-for-expr (format "unconverted eqv?"))]
                   [(cond . ,c*)
                    (error 'bigrams-for-expr (format "unconverted cond"))]
+                  [(match . ,c*) ;; need to handle 'match-against and 'match-result
+                   (error 'bigrams-for-expr (format "unconverted match"))]
                   [(quote ())
                    (list (list 'nil parent))]
                   [(quote ,x) (guard (symbol? x))
