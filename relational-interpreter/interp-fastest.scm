@@ -2,6 +2,33 @@
 ;;
 ;; * variadic lambdas should come after multi-argument lambdas
 
+;; FIXME -- symbol?, and perhaps other type predicates, doesn't handle booleans (fails)
+;;
+;; Compare:
+;; > (run* (q)
+;;     (evalo
+;;      `(letrec ((map
+;;                 (lambda (p ls)
+;;                   (if (null? ls)
+;;                       '()
+;;                       (cons (p (car ls)) (map p (cdr ls)))))))
+;;         (map symbol? '(5 6 foo 7)))
+;;      q))
+;; =>
+;; ((#f #f #t #f))
+
+;; > (run* (q)
+;;     (evalo
+;;      `(letrec ((map
+;;                 (lambda (p ls)
+;;                   (if (null? ls)
+;;                       '()
+;;                       (cons (p (car ls)) (map p (cdr ls)))))))
+;;         (map symbol? '(5 6 foo 7 #t)))
+;;      q))
+;; =>
+;; ()
+
 
 ;; The definition of 'letrec' is based based on Dan Friedman's code,
 ;; using the "half-closure" approach from Reynold's definitional
