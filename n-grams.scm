@@ -101,7 +101,7 @@
     (letrec ((count-bigrams
               (lambda (bg-ls count-al)
                 (cond
-                  [(null? bg-ls)                   
+                  [(null? bg-ls)
                    (sort-counts-al-by-symbols count-al)]
                   [else
                    (let ((bg (car bg-ls)))
