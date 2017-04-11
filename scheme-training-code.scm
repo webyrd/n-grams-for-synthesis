@@ -1,5 +1,10 @@
 ;; Scheme expressions used in creating n-grams
 
+;; To better reflect the code handled by relational Scheme interpreters:
+;; * 'cond' expressions have been transformed into nested 'if' expressions [some interpreters can handle 'cond', but 'if' seems simpler from the n-grams perspective]
+;; * 'eq?' and 'eqv?' have been transformed into 'equal?'
+;; * some calls to 'atom?', 'add1', etc., have been left in---any calls to primitives not explicity handled in the 'n-grams.scm' 'bigrams-for-expr' function will be counted as "generic" procedure applications
+
 (define exprs
   '(
 
