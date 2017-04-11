@@ -1,9 +1,14 @@
 # n-grams-for-synthesis
-n-gram probabilities based on Lisp code, for directing search of the relational Scheme interpreter
+
+n-gram probabilities based on Lisp code, for directing search of the relational Scheme interpreter, and a prototype example relational interpreter with a search (crudely) informed by these probabilities.
 
 Based on detailed discussions with Michael Ballantyne, Rob Zinkov, Greg Rosenblatt, Evan Donahue, Nehal Patel.
 
-Example usage using Chez Scheme:
+
+Please see the `EXPLAIN.txt` file in `relational-interpreter` for details on the relational interpreters.
+
+
+Example generation of bigrams using Chez Scheme:
 
 ```
 > (load "n-grams.scm")
