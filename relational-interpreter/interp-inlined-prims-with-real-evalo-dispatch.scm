@@ -9,6 +9,18 @@
   (case context
     ((top-level)
      (eval-expo-with-default-ordering context))
+
+    ;; These two cases seem to not help, and indeed very slightly slow
+    ;; down synthesis.  I suspect this is because of work/unifications
+    ;; and introductions of logic variables.  I suspect much duplicate
+    ;; work introduced in the "inlining" transformation can be
+    ;; removed.
+    ;;
+    ;; ((app-rator)
+    ;;  (eval-expo-app-rator-ordering context))
+    ;; ((prim-app-rator)
+    ;;  (eval-expo-prim-app-rator-ordering context))
+    
     ((lambda-multi lambda-variadic)
      ;; consolidating both types of lambda for now
      (eval-expo-lambda-ordering context))
@@ -48,24 +60,24 @@
       ;; null?
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . null?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
          (fresh (v)
            (== `(,v) a*)
            (conde
              ((== '() v) (== #t val))
              ((=/= '() v) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ;; equal?
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . equal?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
          (fresh (v1 v2)
            (== `(,v1 ,v2) a*)
            (conde
              ((== v1 v2) (== #t val))
              ((=/= v1 v2) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
       
       ;; and
       ((and-primo expr env val context))
@@ -121,43 +133,42 @@
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) ;; FIX ME??  should this really be app-rator?  or something like prim-rator?
+         ((make-eval-expo 'prim-app-rator)
           rator env `(prim . cons))
          (fresh (a d)
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
-         (eval-listo rands env a* 'app-rand* ;; FIX ME??  should this really be app-rand*?  or something like prim-rand*?
-                     )))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . car))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
          (fresh (d)
            (== `((,val . ,d)) a*)
            (=/= 'closure val))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . cdr))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
          (fresh (a)
            (== `((,a . ,val)) a*)
            (=/= 'closure a))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . not))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
          (fresh (b)
            (== `(,b) a*)
            (conde
              ((=/= #f b) (== #f val))
              ((== #f b) (== #t val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . symbol?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
          (fresh (v)
            (== `(,v) a*)
            (conde
@@ -166,7 +177,7 @@
              ((fresh (a d)
                 (== `(,a . ,d) v)
                 (== #f val)))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((handle-matcho expr env val context))
 
@@ -224,13 +235,12 @@
       ;; cons
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) ;; FIX ME??  should this really be app-rator?  or something like prim-rator?
+         ((make-eval-expo 'prim-app-rator)
           rator env `(prim . cons))
          (fresh (a d)
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
-         (eval-listo rands env a* 'app-rand* ;; FIX ME??  should this really be app-rand*?  or something like prim-rand*?
-                     )))
+         (eval-listo rands env a* 'prim-app-rand*)))
       
       ((fresh (x body)
          (== `(lambda ,x ,body) expr)
@@ -269,43 +279,43 @@
     
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . car))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
          (fresh (d)
            (== `((,val . ,d)) a*)
            (=/= 'closure val))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . cdr))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
          (fresh (a)
            (== `((,a . ,val)) a*)
            (=/= 'closure a))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . not))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
          (fresh (b)
            (== `(,b) a*)
            (conde
              ((=/= #f b) (== #f val))
              ((== #f b) (== #t val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . equal?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
          (fresh (v1 v2)
            (== `(,v1 ,v2) a*)
            (conde
              ((== v1 v2) (== #t val))
              ((=/= v1 v2) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . symbol?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
          (fresh (v)
            (== `(,v) a*)
            (conde
@@ -314,17 +324,17 @@
              ((fresh (a d)
                 (== `(,a . ,d) v)
                 (== #f val)))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . null?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
          (fresh (v)
            (== `(,v) a*)
            (conde
              ((== '() v) (== #t val))
              ((=/= '() v) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((handle-matcho expr env val context))
 
@@ -385,13 +395,12 @@
       ;; cons
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) ;; FIX ME??  should this really be app-rator?  or something like prim-rator?
+         ((make-eval-expo 'prim-app-rator)
           rator env `(prim . cons))
          (fresh (a d)
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
-         (eval-listo rands env a* 'app-rand* ;; FIX ME??  should this really be app-rand*?  or something like prim-rand*?
-                     )))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ;; if
       ((if-primo expr env val context))
@@ -427,43 +436,43 @@
       
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . car))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
          (fresh (d)
            (== `((,val . ,d)) a*)
            (=/= 'closure val))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . cdr))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
          (fresh (a)
            (== `((,a . ,val)) a*)
            (=/= 'closure a))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . not))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
          (fresh (b)
            (== `(,b) a*)
            (conde
              ((=/= #f b) (== #f val))
              ((== #f b) (== #t val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . equal?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
          (fresh (v1 v2)
            (== `(,v1 ,v2) a*)
            (conde
              ((== v1 v2) (== #t val))
              ((=/= v1 v2) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . symbol?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
          (fresh (v)
            (== `(,v) a*)
            (conde
@@ -472,17 +481,17 @@
              ((fresh (a d)
                 (== `(,a . ,d) v)
                 (== #f val)))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . null?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
          (fresh (v)
            (== `(,v) a*)
            (conde
              ((== '() v) (== #t val))
              ((=/= '() v) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((handle-matcho expr env val context))
 
@@ -563,53 +572,52 @@
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) ;; FIX ME??  should this really be app-rator?  or something like prim-rator?
+         ((make-eval-expo 'prim-app-rator)
           rator env `(prim . cons))
          (fresh (a d)
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
-         (eval-listo rands env a* 'app-rand* ;; FIX ME??  should this really be app-rand*?  or something like prim-rand*?
-                     )))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . car))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
          (fresh (d)
            (== `((,val . ,d)) a*)
            (=/= 'closure val))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . cdr))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
          (fresh (a)
            (== `((,a . ,val)) a*)
            (=/= 'closure a))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . not))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
          (fresh (b)
            (== `(,b) a*)
            (conde
              ((=/= #f b) (== #f val))
              ((== #f b) (== #t val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . equal?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
          (fresh (v1 v2)
            (== `(,v1 ,v2) a*)
            (conde
              ((== v1 v2) (== #t val))
              ((=/= v1 v2) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . symbol?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
          (fresh (v)
            (== `(,v) a*)
            (conde
@@ -618,17 +626,17 @@
              ((fresh (a d)
                 (== `(,a . ,d) v)
                 (== #f val)))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . null?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
          (fresh (v)
            (== `(,v) a*)
            (conde
              ((== '() v) (== #t val))
              ((=/= '() v) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((handle-matcho expr env val context))
 
@@ -651,6 +659,300 @@
       ((boolean-primo expr env val context))
       ((and-primo expr env val context))
       ((or-primo expr env val context))
+    
+      )))
+
+(define (eval-expo-app-rator-ordering context)
+  (lambda (expr env val)
+    (conde
+      ;; Variable lookup is by far the dominant case.
+      ;; In most cases, the variable is a recursive call.
+      ;; In any case, the variable should be bound to a *closure*.
+      ;; old version: ((symbolo expr) (lookupo expr env val))
+      ;;
+      ((symbolo expr)
+       (fresh (x body env^)
+         (== `(closure (lambda ,x ,body) ,env^) val)
+         (lookupo expr env val)))
+      
+      ((== `(quote ,val) expr)
+       (absento 'closure val)
+       (absento 'prim val)
+       (not-in-envo 'quote env))
+
+      ((numbero expr) (== expr val))
+
+      ((fresh (x body)
+         (== `(lambda ,x ,body) expr)
+         (== `(closure (lambda ,x ,body) ,env) val)
+         (conde
+           ;; Variadic
+           ((symbolo x))
+           ;; Multi-argument
+           ((list-of-symbolso x)))
+         (not-in-envo 'lambda env)))
+    
+      ((fresh (rator x rands body env^ a* res)
+         (== `(,rator . ,rands) expr)
+         ;; variadic
+         (symbolo x)
+         (== `((,x . (val . ,a*)) . ,env^) res)
+         ((make-eval-expo 'app-rator) rator env `(closure (lambda ,x ,body) ,env^))
+         ((make-eval-expo 'lambda-variadic) body res val)
+         (eval-listo rands env a* 'app-rand*)))
+
+      ((fresh (rator x* rands body env^ a* res)
+         (== `(,rator . ,rands) expr)
+         ;; Multi-argument
+         ((make-eval-expo 'app-rator) rator env `(closure (lambda ,x* ,body) ,env^))
+         (eval-listo rands env a* 'app-rand*)
+         (ext-env*o x* a* env^ res)
+         ((make-eval-expo 'lambda-multi) body res val)))
+    
+      #|
+      ((fresh (rator x* rands a* prim-id)
+      (== `(,rator . ,rands) expr)
+      (eval-expo rator env `(prim . ,prim-id))
+      (eval-primo prim-id a* val)
+      (eval-listo rands env a*)))
+      |#
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator)
+          rator env `(prim . cons))
+         (fresh (a d)
+           (== `(,a ,d) a*)
+           (== `(,a . ,d) val))
+         (eval-listo rands env a* 'prim-app-rand*)))
+    
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
+         (fresh (d)
+           (== `((,val . ,d)) a*)
+           (=/= 'closure val))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
+         (fresh (a)
+           (== `((,a . ,val)) a*)
+           (=/= 'closure a))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
+         (fresh (b)
+           (== `(,b) a*)
+           (conde
+             ((=/= #f b) (== #f val))
+             ((== #f b) (== #t val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
+         (fresh (v1 v2)
+           (== `(,v1 ,v2) a*)
+           (conde
+             ((== v1 v2) (== #t val))
+             ((=/= v1 v2) (== #f val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
+         (fresh (v)
+           (== `(,v) a*)
+           (conde
+             ((symbolo v) (== #t val))
+             ((numbero v) (== #f val))
+             ((fresh (a d)
+                (== `(,a . ,d) v)
+                (== #f val)))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
+         (fresh (v)
+           (== `(,v) a*)
+           (conde
+             ((== '() v) (== #t val))
+             ((=/= '() v) (== #f val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+    
+      ((handle-matcho expr env val context))
+
+      ((fresh (p-name x body letrec-body)
+         ;; single-function variadic letrec version
+         (== `(letrec ((,p-name (lambda ,x ,body)))
+                ,letrec-body)
+             expr)
+         (conde
+                                        ; Variadic
+           ((symbolo x))
+                                        ; Multiple argument
+           ((list-of-symbolso x)))
+         (not-in-envo 'letrec env)
+         ((make-eval-expo 'letrec-body)
+          letrec-body
+          `((,p-name . (rec . (lambda ,x ,body))) . ,env)
+          val)))
+
+      ((boolean-primo expr env val context))
+      ((and-primo expr env val context))
+      ((or-primo expr env val context))
+      ((if-primo expr env val context))
+    
+      )))
+
+(define (eval-expo-prim-app-rator-ordering context)
+  (lambda (expr env val)
+    (conde
+      ;; The variable should be bound to a *prim*.
+      ;; old version: ((symbolo expr) (lookupo expr env val))
+      ;;
+      ((symbolo expr)
+       (fresh (prim-id)
+         (== `(prim . ,prim-id) val)
+         (lookupo expr env val)))
+      
+      ((== `(quote ,val) expr)
+       (absento 'closure val)
+       (absento 'prim val)
+       (not-in-envo 'quote env))
+
+      ((numbero expr) (== expr val))
+
+      ((fresh (x body)
+         (== `(lambda ,x ,body) expr)
+         (== `(closure (lambda ,x ,body) ,env) val)
+         (conde
+           ;; Variadic
+           ((symbolo x))
+           ;; Multi-argument
+           ((list-of-symbolso x)))
+         (not-in-envo 'lambda env)))
+    
+      ((fresh (rator x rands body env^ a* res)
+         (== `(,rator . ,rands) expr)
+         ;; variadic
+         (symbolo x)
+         (== `((,x . (val . ,a*)) . ,env^) res)
+         ((make-eval-expo 'app-rator) rator env `(closure (lambda ,x ,body) ,env^))
+         ((make-eval-expo 'lambda-variadic) body res val)
+         (eval-listo rands env a* 'app-rand*)))
+
+      ((fresh (rator x* rands body env^ a* res)
+         (== `(,rator . ,rands) expr)
+         ;; Multi-argument
+         ((make-eval-expo 'app-rator) rator env `(closure (lambda ,x* ,body) ,env^))
+         (eval-listo rands env a* 'app-rand*)
+         (ext-env*o x* a* env^ res)
+         ((make-eval-expo 'lambda-multi) body res val)))
+    
+      #|
+      ((fresh (rator x* rands a* prim-id)
+      (== `(,rator . ,rands) expr)
+      (eval-expo rator env `(prim . ,prim-id))
+      (eval-primo prim-id a* val)
+      (eval-listo rands env a*)))
+      |#
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator)
+          rator env `(prim . cons))
+         (fresh (a d)
+           (== `(,a ,d) a*)
+           (== `(,a . ,d) val))
+         (eval-listo rands env a* 'prim-app-rand*)))
+    
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
+         (fresh (d)
+           (== `((,val . ,d)) a*)
+           (=/= 'closure val))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
+         (fresh (a)
+           (== `((,a . ,val)) a*)
+           (=/= 'closure a))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
+         (fresh (b)
+           (== `(,b) a*)
+           (conde
+             ((=/= #f b) (== #f val))
+             ((== #f b) (== #t val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
+         (fresh (v1 v2)
+           (== `(,v1 ,v2) a*)
+           (conde
+             ((== v1 v2) (== #t val))
+             ((=/= v1 v2) (== #f val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
+         (fresh (v)
+           (== `(,v) a*)
+           (conde
+             ((symbolo v) (== #t val))
+             ((numbero v) (== #f val))
+             ((fresh (a d)
+                (== `(,a . ,d) v)
+                (== #f val)))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+
+      ((fresh (rator x* rands a* prim-id)
+         (== `(,rator . ,rands) expr)
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
+         (fresh (v)
+           (== `(,v) a*)
+           (conde
+             ((== '() v) (== #t val))
+             ((=/= '() v) (== #f val))))
+         (eval-listo rands env a* 'prim-app-rand*)))
+    
+      ((handle-matcho expr env val context))
+
+      ((fresh (p-name x body letrec-body)
+         ;; single-function variadic letrec version
+         (== `(letrec ((,p-name (lambda ,x ,body)))
+                ,letrec-body)
+             expr)
+         (conde
+                                        ; Variadic
+           ((symbolo x))
+                                        ; Multiple argument
+           ((list-of-symbolso x)))
+         (not-in-envo 'letrec env)
+         ((make-eval-expo 'letrec-body)
+          letrec-body
+          `((,p-name . (rec . (lambda ,x ,body))) . ,env)
+          val)))
+
+      ((boolean-primo expr env val context))
+      ((and-primo expr env val context))
+      ((or-primo expr env val context))
+      ((if-primo expr env val context))
     
       )))
 
@@ -703,53 +1005,52 @@
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) ;; FIX ME??  should this really be app-rator?  or something like prim-rator?
+         ((make-eval-expo 'prim-app-rator)
           rator env `(prim . cons))
          (fresh (a d)
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
-         (eval-listo rands env a* 'app-rand* ;; FIX ME??  should this really be app-rand*?  or something like prim-rand*?
-                     )))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . car))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . car))
          (fresh (d)
            (== `((,val . ,d)) a*)
            (=/= 'closure val))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . cdr))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . cdr))
          (fresh (a)
            (== `((,a . ,val)) a*)
            (=/= 'closure a))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . not))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . not))
          (fresh (b)
            (== `(,b) a*)
            (conde
              ((=/= #f b) (== #f val))
              ((== #f b) (== #t val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . equal?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . equal?))
          (fresh (v1 v2)
            (== `(,v1 ,v2) a*)
            (conde
              ((== v1 v2) (== #t val))
              ((=/= v1 v2) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . symbol?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . symbol?))
          (fresh (v)
            (== `(,v) a*)
            (conde
@@ -758,17 +1059,17 @@
              ((fresh (a d)
                 (== `(,a . ,d) v)
                 (== #f val)))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
 
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
-         ((make-eval-expo 'app-rator) rator env `(prim . null?))
+         ((make-eval-expo 'prim-app-rator) rator env `(prim . null?))
          (fresh (v)
            (== `(,v) a*)
            (conde
              ((== '() v) (== #t val))
              ((=/= '() v) (== #f val))))
-         (eval-listo rands env a* 'app-rand*)))
+         (eval-listo rands env a* 'prim-app-rand*)))
     
       ((handle-matcho expr env val context))
 
