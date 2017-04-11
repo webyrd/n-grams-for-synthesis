@@ -1,0 +1,14 @@
+This directory contains several versions of the 'full-interp.scm' relational interpreter from 'faster-mk' (https://github.com/michaelballantyne/faster-miniKanren/blob/master/full-interp.scm), along with the implementation of 'faster-mk'.  The modified versions of the interpreter are intended to explore the tradeoffs in ordering the 'conde' clauses in the interpreter by the context of the current expression to be evaluated or synthesized (for example, if the current context is the body of a 'lambda' expression, then perhaps an 'if' expression would be likely.
+
+The intent is to order the 'conde' clauses based on the bigram results in the main directory.
+
+The interpreters, in the order I modified them:
+
+* interp-old-style.scm -- the original relational interpreter from the 'faster-mk' repository, corresponding to https://github.com/michaelballantyne/faster-miniKanren/blob/master/full-interp.scm   There is one, fixed ordering of 'conde' clauses in this interpreter, and the interpreter does not pass around the context of the current expression.
+* interp-inlined-prims.scm -- 
+* interp-inlined-prims-with-dummy-evalo-dispatch.scm -- 
+* interp-inlined-prims-with-real-evalo-dispatch.scm -- 
+
+
+
+
