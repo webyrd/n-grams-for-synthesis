@@ -292,8 +292,6 @@
              (c d e f))))
         '(((null? l) s cons l))))
 
-#|
-;; doesn't seem to come back
 (time (test "append-16"
         (run 1 (q r s t u)
           (absento 'a r)
@@ -316,7 +314,6 @@
              (a b)
              (c d e f))))
         '(((null? l) s cons car l))))
-|#
 
 (time (test "append-17"
         (run 1 (q r s t)
