@@ -168,6 +168,57 @@
             (cdr '(_.0 #f #f #t #f #t #t)))
            (absento (closure _.0) (prim _.0))))))
 
+(time (test "map-8"
+        (run 1 (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map symbol? '(5 6 foo 7 bar baz)))
+           '(#f #f #t #f #t #t)))
+        '((null? ls))))
+
+(time (test "map-9"
+        (run 1 (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '((null? ls))))
+
+(time (test "map-10"
+        (run 2 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls)
+          ((null? ls) '()))))
+
+
+
 ;; append tests
 
 (time (test "append-0"
