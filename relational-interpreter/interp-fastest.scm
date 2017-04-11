@@ -831,10 +831,17 @@
 
 (define (eval-expo-prim-app-rator-ordering context)
   (lambda (expr env val)
+    ;; The variable should be bound to a *prim*.
+    ;; old version: ((symbolo expr) (lookupo expr env val))
+    ;;
+    ;; This means we no longer need the 'conde'!
+    (fresh (prim-id)
+      (symbolo expr)
+      (== `(prim . ,prim-id) val)
+      (lookupo expr env val))
+
+    #|
     (conde
-      ;; The variable should be bound to a *prim*.
-      ;; old version: ((symbolo expr) (lookupo expr env val))
-      ;;
       ((symbolo expr)
        (fresh (prim-id)
          (== `(prim . ,prim-id) val)
@@ -973,7 +980,10 @@
       ((or-primo expr env val context))
       ((if-primo expr env val context))
     
-      )))
+      )
+    |#
+    
+    ))
 
 (define (eval-expo-app-rand*-ordering context)
   (lambda (expr env val)
