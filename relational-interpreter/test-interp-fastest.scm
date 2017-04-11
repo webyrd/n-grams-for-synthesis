@@ -325,6 +325,75 @@
              (#f #f #t #f #t #t))))
         '(((null? ls) ls cons p (car ls)))))
 
+(time (test "map-17"
+        (run 1 (q r s t u)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t . ,u) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p ((car ls))))))
+
+(time (test "map-18"
+        (run 1 (q r s t)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s ,t (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons (p (car ls))))))
+
+
+;; FIXME why in the world does this test appear to fail when I load this file?
+;;
+;; Testing "map-19"
+;; Failed: (run 1 (q r s t u v w) (evalo `(letrec ((map (lambda (p ls) (if ,q ,r (,s (,t (,u ,v)) (map p (cdr ls))))))) (list (map symbol? '()) (map symbol? '(8)) (map symbol? '(quux)) (map symbol? '(5 6 foo 7 bar baz)))) '(() (#f) (#t) (#f #f #t #f #t #t))))
+;; Expected: (((null? ls) ls cons p car ls))
+;; Computed: (((null? ls) ls cons p car ls _.0))
+;; (time (test "map-19" ...))
+;;     250 collections
+;;     5.318724000s elapsed cpu time, including 0.832374000s collecting
+;;     5.327199000s elapsed real time, including 0.835247000s collecting
+;;     2113712640 bytes allocated, including 2116475472 bytes reclaimed
+;;
+;; The failed message doesn't even show the 'w' variable!  Instead, we see 'ls'.  Am I loading the wrong file?  Is there something wrong with the test macro?  The test seems to run when I load it in the REPL.  I feel like I must be doing something stupid.
+(time (test "map-19"
+        (run 1 (q r s t u v w)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t (,u ,v)) (map p (cdr ,w)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p car ls))))
+
+
 
 
 ;; append tests

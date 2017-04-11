@@ -1,6 +1,8 @@
 # n-grams-for-synthesis
 n-gram probabilities based on Lisp code, for directing search of the relational Scheme interpreter
 
+Based on detailed discussions with Michael Ballantyne, Rob Zinkov, Greg Rosenblatt, Evan Donahue, Nehal Patel.
+
 Example usage using Chez Scheme:
 
 ```
