@@ -384,6 +384,98 @@
              (d e . f))))
         '(((null? l) s cons (car l)))))
 
+(time (test "append-19b"
+        (run 1 (q r s t u)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s ,t (append (cdr l) ,u))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '(((null? l) s cons (car l) s))))
+
+(time (test "append-19c"
+        (run 1 (q r s t u v)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s ,t (append (cdr ,u) ,v))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '(((null? l) s cons (car l) l s))))
+
+(time (test "append-19d"
+        (run 1 (q r s t u v w)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s ,t (append (,u ,v) ,w))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '(((null? l) s cons (car l) cdr l s))))
+
+(time (test "append-19e"
+        (run 1 (q r s t u v w)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s ,t (append (,u . ,v) ,w))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '(((null? l) s cons (car l) cdr (l) s))))
+
 (time (test "append-20"
         (run 1 (q r s)
           (absento 'a r)
