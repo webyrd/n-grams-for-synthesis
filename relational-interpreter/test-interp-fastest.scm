@@ -3,6 +3,67 @@
 (load "interp-fastest.scm")
 (load "test-check.scm")
 
+;; map tests
+
+(time (test "map-0"
+        (run* (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map symbol? '(5 6 foo 7 bar baz)))
+           '(#f #f #t #f #t #t)))
+        '(_.0)))
+
+(time (test "map-1"
+        (run 1 (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map ,q '(5 6 foo 7 bar baz)))
+           '(#f #f #t #f #t #t)))
+        '(symbol?)))
+
+(time (test "map-2"
+        (run 4 (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map ,q '(5 6 foo 7 bar baz)))
+           '(#f #f #t #f #t #t)))
+        '(symbol?
+          ((cdr (cons _.0 symbol?)) (num _.0))
+          (car (list symbol?))
+          (cdr (cons map symbol?)))))
+
+(time (test "map-3"
+        (run 1 (q)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map symbol? ',q))
+           '(#f #f #t #f #t #t)))
+        '(((_.0 _.1 _.2 _.3 _.4 _.5)
+           (=/= ((_.2 closure))
+                ((_.2 prim))
+                ((_.4 closure))
+                ((_.4 prim))
+                ((_.5 closure))
+                ((_.5 prim)))
+           (num _.0 _.1 _.3)
+           (sym _.2 _.4 _.5)))))
+
 ;; append tests
 
 (time (test "append-0"
