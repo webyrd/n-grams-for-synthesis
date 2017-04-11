@@ -1,5 +1,9 @@
 ;; Scheme expressions used in creating n-grams
 
+;; Basic recursive functions over flat and nested lists, and a few recursive functions over numbers.  Some examples adapted from The Little Schemer and The Seasoned Schemer.  Hopefully these examples are similar in spirit to recursive functions that a user may wish to synthesize.
+
+;; We need more definitions!!  Perhaps use examples from Essentials of Programming Languages, Scheme and the Art of Programming, miniKanren/microKanren, etc.
+
 ;; To better reflect the code handled by relational Scheme interpreters:
 ;; * 'cond' expressions have been transformed into nested 'if' expressions [some interpreters can handle 'cond', but 'if' seems simpler from the n-grams perspective]
 ;; * 'eq?' and 'eqv?' have been transformed into 'equal?'
