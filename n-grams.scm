@@ -12,8 +12,6 @@
                    (error 'bigrams-for-expr (format "unconverted eqv?"))]
                   [(cond . ,c*)
                    (error 'bigrams-for-expr (format "unconverted cond"))]
-                  [(let . ,rest) ;; should probably add 'let'
-                   (error 'bigrams-for-expr (format "unconverted let"))]
                   [(quote ())
                    (list (list 'nil parent))]
                   [(quote ,x) (guard (symbol? x))
@@ -82,10 +80,14 @@
                    (cons (list 'equal? parent)
                          (append (bigrams-for-expr e1 'equal? defn-name args)
                                  (bigrams-for-expr e2 'equal? defn-name args)))]
+                  [(let ,binding* ,e)
+                   (cons (list 'let parent)
+                         (append (apply append (map (lambda (binding) (bigrams-for-expr (cadr binding) 'let-rhs defn-name args)) binding*))
+                                 (bigrams-for-expr e 'let-body defn-name args)))]
                   [(letrec ((,id (lambda ,x ,body))) ,e)
                    (cons (list 'letrec parent)
-                         (append (bigrams-for-expr `(lambda ,x ,body) 'letrec defn-name args)
-                                 (bigrams-for-expr e 'letrec id args)))]
+                         (append (bigrams-for-expr `(lambda ,x ,body) 'letrec-rhs defn-name args)
+                                 (bigrams-for-expr e 'letrec-body id args)))]
                   [(,e . ,e*) ;; application
                    (cons (list 'app parent)
                          (append (bigrams-for-expr e 'app-rator defn-name args)
