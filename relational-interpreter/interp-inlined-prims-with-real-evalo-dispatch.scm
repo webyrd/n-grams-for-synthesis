@@ -977,24 +977,8 @@
     ;; ((app-rand* null?) . 1)
     ;;
     (conde
-      ((== `(quote ,val) expr)
-       (absento 'closure val)
-       (absento 'prim val)
-       (not-in-envo 'quote env))
-
-      ((numbero expr) (== expr val))
-
+      ;; var
       ((symbolo expr) (lookupo expr env val))
-
-      ((fresh (x body)
-         (== `(lambda ,x ,body) expr)
-         (== `(closure (lambda ,x ,body) ,env) val)
-         (conde
-           ;; Variadic
-           ((symbolo x))
-           ;; Multi-argument
-           ((list-of-symbolso x)))
-         (not-in-envo 'lambda env)))
 
       ;; cdr
       ((fresh (rator x* rands a* prim-id)
@@ -1014,7 +998,7 @@
            (=/= 'closure val))
          (eval-listo rands env a* 'prim-app-rand*)))
 
-      
+      ;; application
       ((fresh (rator x rands body env^ a* res)
          (== `(,rator . ,rands) expr)
          ;; variadic
@@ -1031,15 +1015,8 @@
          (eval-listo rands env a* 'app-rand*)
          (ext-env*o x* a* env^ res)
          ((make-eval-expo 'lambda-multi) body res val)))
-    
-      #|
-      ((fresh (rator x* rands a* prim-id)
-      (== `(,rator . ,rands) expr)
-      (eval-expo rator env `(prim . ,prim-id))
-      (eval-primo prim-id a* val)
-      (eval-listo rands env a*)))
-      |#
 
+      ;; cons
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
          ((make-eval-expo 'prim-app-rator)
@@ -1048,6 +1025,34 @@
            (== `(,a ,d) a*)
            (== `(,a . ,d) val))
          (eval-listo rands env a* 'prim-app-rand*)))
+
+      ;; handles nil
+      ((== `(quote ,val) expr)
+       (absento 'closure val)
+       (absento 'prim val)
+       (not-in-envo 'quote env))
+
+      ;; lambda
+      ((fresh (x body)
+         (== `(lambda ,x ,body) expr)
+         (== `(closure (lambda ,x ,body) ,env) val)
+         (conde
+           ;; Variadic
+           ((symbolo x))
+           ;; Multi-argument
+           ((list-of-symbolso x)))
+         (not-in-envo 'lambda env)))
+
+      ((numbero expr) (== expr val))
+
+      
+      #|
+      ((fresh (rator x* rands a* prim-id)
+      (== `(,rator . ,rands) expr)
+      (eval-expo rator env `(prim . ,prim-id))
+      (eval-primo prim-id a* val)
+      (eval-listo rands env a*)))
+      |#
     
       ((fresh (rator x* rands a* prim-id)
          (== `(,rator . ,rands) expr)
