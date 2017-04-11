@@ -209,6 +209,31 @@
         '(((null? l) s))))
 |#
 
+#|
+(time (test "append-14"
+        (run 1 (q r s)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s (car l) (append (cdr l) s))))))
+              (list
+               (append '() '())
+               (append '(a) '(b))
+               (append '(c d) '(e f))))
+           '(()
+             (a b)
+             (c d e f))))
+        '(((null? l) s cons))))
+|#
+
 
 ;; We use the relational Racket interpreter, extended to support 'and'
 ;; and 'or', to allow us to write a simple proof checker for
