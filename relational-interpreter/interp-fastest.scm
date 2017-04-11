@@ -678,7 +678,8 @@
     ;; In most cases, the variable is a recursive call.
     ;; In any case, the variable should be bound to a *closure*.
     ;; old version: ((symbolo expr) (lookupo expr env val))
-    ;;    
+    ;;
+    ;; This means we no longer need the 'conde'!
     (fresh (x body env^)
       (symbolo expr)
       (== `(closure (lambda ,x ,body) ,env^) val)
