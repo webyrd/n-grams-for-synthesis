@@ -2,7 +2,7 @@
 
 n-gram probabilities based on Lisp code, for directing search of the relational Scheme interpreter, and a prototype example relational interpreter with a search (crudely) informed by these probabilities.
 
-Based on detailed discussions with Michael Ballantyne, Rob Zinkov, Greg Rosenblatt, Evan Donahue, Nehal Patel.
+Based on detailed discussions with Michael Ballantyne, Rob Zinkov, Ramana Kumar, Greg Rosenblatt, Evan Donahue, Nehal Patel, and the broader miniKanren community.
 
 
 Please see the `EXPLAIN.txt` file in `relational-interpreter` for details on the relational interpreters.
