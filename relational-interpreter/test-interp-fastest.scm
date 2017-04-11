@@ -217,6 +217,78 @@
         '(((null? ls) ls)
           ((null? ls) '()))))
 
+(time (test "map-11"
+        (run 1 (q r s)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (p (car ls)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons))))
+
+(time (test "map-12"
+        (run 1 (q r s t)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t (car ls)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p))))
+
+(time (test "map-13"
+        (run 1 (q r s t u)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t (car ,u)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p ls))))
+
+(time (test "map-14"
+        (run 1 (q r s t u v)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t (,u ,v)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p car ls))))
+
 
 
 ;; append tests
