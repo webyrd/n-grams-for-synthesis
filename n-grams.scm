@@ -6,10 +6,14 @@
     (letrec ((bigrams-for-expr
               (lambda (expr parent defn-name args)
                 (pmatch expr
-                  [(eq? . ,e*)
+                  [(eq? ,e1 ,e2)
                    (error 'bigrams-for-expr (format "unconverted eq?"))]
-                  [(cond . ,e*)
+                  [(eqv? ,e1 ,e2)
+                   (error 'bigrams-for-expr (format "unconverted eqv?"))]
+                  [(cond . ,c*)
                    (error 'bigrams-for-expr (format "unconverted cond"))]
+                  [(let . ,rest) ;; should probably add 'let'
+                   (error 'bigrams-for-expr (format "unconverted let"))]
                   [(quote ())
                    (list (list 'nil parent))]
                   [(quote ,x) (guard (symbol? x))
@@ -95,18 +99,8 @@
     (letrec ((count-bigrams
               (lambda (bg-ls count-al)
                 (cond
-                  [(null? bg-ls)
-                   (sort
-                     (lambda (e1 e2)
-                       (or
-                        (string<? (symbol->string (caar e1))
-                                  (symbol->string (caar e2)))
-                        (and
-                         (string=? (symbol->string (caar e1))
-                                   (symbol->string (caar e2)))
-                         (string<? (symbol->string (cadar e1))
-                                   (symbol->string (cadar e2))))))
-                     count-al)]
+                  [(null? bg-ls)                   
+                   (sort-counts-al-by-symbols count-al)]
                   [else
                    (let ((bg (car bg-ls)))
                      (let ((count-al
@@ -118,6 +112,20 @@
                               [else (cons (cons bg 1) count-al)])))
                        (count-bigrams (cdr bg-ls) count-al)))]))))
       (count-bigrams bg-ls '()))))
+
+(define sort-counts-al-by-symbols
+  (lambda (counts-al)
+    (sort
+     (lambda (e1 e2)
+       (or
+        (string<? (symbol->string (caar e1))
+                  (symbol->string (caar e2)))
+        (and
+         (string=? (symbol->string (caar e1))
+                   (symbol->string (caar e2)))
+         (string<? (symbol->string (cadar e1))
+                   (symbol->string (cadar e2))))))
+     counts-al)))
 
 (define sort-counts-al-by-type/counts
   (lambda (counts-al)
@@ -132,8 +140,8 @@
          (> (cdr e1) (cdr e2)))))
      counts-al)))
 
-(define bigrams (apply append (map bigrams-for-expr exprs)))
-(define bigram-counts (count-bigrams (map reverse bigrams)))
+(define bigrams (map reverse (apply append (map bigrams-for-expr exprs))))
+(define bigram-counts (count-bigrams bigrams))
 (define bigrams-sorted-by-counts (sort (lambda (e1 e2) (> (cdr e1) (cdr e2))) bigram-counts))
 
 ;; this is the important one
