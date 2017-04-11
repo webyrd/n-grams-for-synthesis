@@ -289,6 +289,42 @@
              (#f #f #t #f #t #t))))
         '(((null? ls) ls cons p car ls))))
 
+(time (test "map-15"
+        (run 1 (q r s t u v)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t (,u . ,v)) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p car (ls)))))
+
+(time (test "map-16"
+        (run 1 (q r s t u)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if ,q
+                            ,r
+                            (,s (,t ,u) (map p (cdr ls)))))))
+              (list (map symbol? '())
+                    (map symbol? '(8))
+                    (map symbol? '(quux))
+                    (map symbol? '(5 6 foo 7 bar baz))))
+           '(()
+             (#f)
+             (#t)
+             (#f #f #t #f #t #t))))
+        '(((null? ls) ls cons p (car ls)))))
+
 
 
 ;; append tests
