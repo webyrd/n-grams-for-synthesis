@@ -363,6 +363,29 @@
              (d e . f))))
         '(((null? l) s cons car l))))
 
+(time (test "append-19"
+        (run 1 (q r s t)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s ,t (append (cdr l) s))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '(((null? l) s cons (car l)))))
+
 ;; We use the relational Racket interpreter, extended to support 'and'
 ;; and 'or', to allow us to write a simple proof checker for
 ;; propositional logic as a Racket function.  Because we can treat the
