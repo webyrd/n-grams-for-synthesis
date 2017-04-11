@@ -79,6 +79,94 @@
            (=/= ((_.1 #f)) ((_.2 #f)) ((_.3 #f)))
            (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (prim _.0) (prim _.1) (prim _.2) (prim _.3))))))
 
+(time (test "map-5"
+        (run 10 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map ,q ,r))
+           '(#f #f #t #f #t #t)))
+        '(((not (cdr '(_.0 _.1 _.2 #f _.3 #f #f)))
+           (=/= ((_.1 #f)) ((_.2 #f)) ((_.3 #f)))
+           (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (prim _.0) (prim _.1) (prim _.2) (prim _.3)))
+          ((not (car '((_.0 _.1 #f _.2 #f #f) . _.3)))
+           (=/= ((_.0 #f)) ((_.1 #f)) ((_.2 #f)))
+           (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (prim _.0) (prim _.1) (prim _.2) (prim _.3)))
+          ((symbol? (cdr '(_.0 _.1 _.2 _.3 _.4 _.5 _.6)))
+           (=/= ((_.3 closure)) ((_.3 prim)) ((_.5 closure)) ((_.5 prim)) ((_.6 closure)) ((_.6 prim)))
+           (num _.1 _.2 _.4) (sym _.3 _.5 _.6) (absento (closure _.0) (prim _.0)))
+          ((symbol? (cdr '(_.0 (_.1 . _.2) _.3 _.4 _.5 _.6 _.7)))
+           (=/= ((_.4 closure)) ((_.4 prim)) ((_.6 closure)) ((_.6 prim)) ((_.7 closure)) ((_.7 prim)))
+           (num _.3 _.5) (sym _.4 _.6 _.7) (absento (closure _.0) (closure _.1) (closure _.2) (prim _.0) (prim _.1) (prim _.2)))
+          ((symbol? (cdr '(_.0 _.1 (_.2 . _.3) _.4 _.5 _.6 _.7)))
+           (=/= ((_.4 closure)) ((_.4 prim)) ((_.6 closure)) ((_.6 prim)) ((_.7 closure)) ((_.7 prim)))
+           (num _.1 _.5) (sym _.4 _.6 _.7) (absento (closure _.0) (closure _.2) (closure _.3) (prim _.0) (prim _.2) (prim _.3)))
+          ((symbol? (cdr '(_.0 (_.1 . _.2) (_.3 . _.4) _.5 _.6 _.7 _.8)))
+           (=/= ((_.5 closure)) ((_.5 prim)) ((_.7 closure)) ((_.7 prim)) ((_.8 closure)) ((_.8 prim)))
+           (num _.6) (sym _.5 _.7 _.8) (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (closure _.4) (prim _.0) (prim _.1) (prim _.2) (prim _.3) (prim _.4)))
+          ((symbol? (cdr '(_.0 _.1 _.2 _.3 (_.4 . _.5) _.6 _.7)))
+           (=/= ((_.3 closure)) ((_.3 prim)) ((_.6 closure)) ((_.6 prim)) ((_.7 closure)) ((_.7 prim)))
+           (num _.1 _.2) (sym _.3 _.6 _.7) (absento (closure _.0) (closure _.4) (closure _.5) (prim _.0) (prim _.4) (prim _.5)))
+          ((symbol? (cdr '(_.0 (_.1 . _.2) _.3 _.4 (_.5 . _.6) _.7 _.8)))
+           (=/= ((_.4 closure)) ((_.4 prim)) ((_.7 closure)) ((_.7 prim)) ((_.8 closure)) ((_.8 prim)))
+           (num _.3) (sym _.4 _.7 _.8) (absento (closure _.0) (closure _.1) (closure _.2) (closure _.5) (closure _.6) (prim _.0) (prim _.1) (prim _.2) (prim _.5) (prim _.6)))
+          ((symbol? (cdr '(_.0 _.1 (_.2 . _.3) _.4 (_.5 . _.6) _.7 _.8)))           
+           (=/= ((_.4 closure)) ((_.4 prim)) ((_.7 closure)) ((_.7 prim)) ((_.8 closure)) ((_.8 prim)))
+           (num _.1) (sym _.4 _.7 _.8) (absento (closure _.0) (closure _.2) (closure _.3) (closure _.5) (closure _.6) (prim _.0) (prim _.2) (prim _.3) (prim _.5) (prim _.6)))
+          ((symbol? (cdr '(_.0 (_.1 . _.2) (_.3 . _.4) _.5 (_.6 . _.7) _.8 _.9)))
+           (=/= ((_.5 closure)) ((_.5 prim)) ((_.8 closure)) ((_.8 prim)) ((_.9 closure)) ((_.9 prim)))
+           (sym _.5 _.8 _.9) (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (closure _.4) (closure _.6) (closure _.7) (prim _.0) (prim _.1) (prim _.2) (prim _.3) (prim _.4) (prim _.6) (prim _.7))))))
+
+#|
+;; doesn't come back quickly
+;; probably need more context:  when lambda is passed in as an argument, there is not necessarily an 'if' immediately in the body.
+(time (test "map-6a"
+        (run 1 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map (lambda . ,q) ,r))
+           '(#f #f #t #f #t #t)))
+        '???))
+|#
+
+#|
+;; probably need more context:  when lambda is passed in as an argument, there is not necessarily an 'if' immediately in the body.
+;; doesn't come back
+(time (test "map-6b"
+        (run 10 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map (lambda . ,q) ,r))
+           '(#f #f #t #f #t #t)))
+        '???))
+|#
+
+;; slow!
+;; probably need more context:  when lambda is passed in as an argument, there is not necessarily an 'if' immediately in the body.
+(time (test "map-7"
+        (run 1 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map (lambda (x) ,q) ,r))
+           '(#f #f #t #f #t #t)))
+        '(((x
+            (cdr '(_.0 #f #f #t #f #t #t)))
+           (absento (closure _.0) (prim _.0))))))
 
 ;; append tests
 
