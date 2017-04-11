@@ -223,6 +223,99 @@
              (c d e f))))
         '(((null? l) s cons))))
 
+(time (test "append-15"
+        (run 1 (q r s t)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s (car ,t) (append (cdr l) s))))))
+              (list
+               (append '() '())
+               (append '(a) '(b))
+               (append '(c d) '(e f))))
+           '(()
+             (a b)
+             (c d e f))))
+        '(((null? l) s cons l))))
+
+(time (test "append-15-full-absentos"
+          (run 1 (q r s t)
+          (absento 'a q)
+          (absento 'b q)
+          (absento 'c q)
+          (absento 'd q)
+          (absento 'e q)
+          (absento 'f q)
+            
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+
+          (absento 'a s)
+          (absento 'b s)
+          (absento 'c s)
+          (absento 'd s)
+          (absento 'e s)
+          (absento 'f s)
+
+          (absento 'a t)
+          (absento 'b t)
+          (absento 'c t)
+          (absento 'd t)
+          (absento 'e t)
+          (absento 'f t)
+
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s (car ,t) (append (cdr l) s))))))
+              (list
+               (append '() '())
+               (append '(a) '(b))
+               (append '(c d) '(e f))))
+           '(()
+             (a b)
+             (c d e f))))
+        '(((null? l) s cons l))))
+
+#|
+;; doesn't seem to come back
+(time (test "append-16"
+        (run 1 (q r s t u)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (,s (,t ,u) (append (cdr l) s))))))
+              (list
+               (append '() '())
+               (append '(a) '(b))
+               (append '(c d) '(e f))))
+           '(()
+             (a b)
+             (c d e f))))
+        '(((null? l) s cons car l))))
+|#
 ;; We use the relational Racket interpreter, extended to support 'and'
 ;; and 'or', to allow us to write a simple proof checker for
 ;; propositional logic as a Racket function.  Because we can treat the
