@@ -21,10 +21,10 @@
     ;; work introduced in the "inlining" transformation can be
     ;; removed.
     ;;
-    ;; ((app-rator)
-    ;;  (eval-expo-app-rator-ordering context))
-    ;; ((prim-app-rator)
-    ;;  (eval-expo-prim-app-rator-ordering context))
+    ((app-rator)
+     (eval-expo-app-rator-ordering context))
+    ((prim-app-rator)
+      (eval-expo-prim-app-rator-ordering context))
 
     ;; does something!
     ((app-rand*)
@@ -674,17 +674,23 @@
 
 (define (eval-expo-app-rator-ordering context)
   (lambda (expr env val)
+    ;; Variable lookup is by far the dominant case.
+    ;; In most cases, the variable is a recursive call.
+    ;; In any case, the variable should be bound to a *closure*.
+    ;; old version: ((symbolo expr) (lookupo expr env val))
+    ;;    
+    (fresh (x body env^)
+      (symbolo expr)
+      (== `(closure (lambda ,x ,body) ,env^) val)
+      (lookupo expr env val))
+
+    #|
     (conde
-      ;; Variable lookup is by far the dominant case.
-      ;; In most cases, the variable is a recursive call.
-      ;; In any case, the variable should be bound to a *closure*.
-      ;; old version: ((symbolo expr) (lookupo expr env val))
-      ;;
       ((symbolo expr)
        (fresh (x body env^)
          (== `(closure (lambda ,x ,body) ,env^) val)
          (lookupo expr env val)))
-      
+
       ((== `(quote ,val) expr)
        (absento 'closure val)
        (absento 'prim val)
@@ -818,7 +824,9 @@
       ((or-primo expr env val context))
       ((if-primo expr env val context))
     
-      )))
+      )
+    |#
+    ))
 
 (define (eval-expo-prim-app-rator-ordering context)
   (lambda (expr env val)

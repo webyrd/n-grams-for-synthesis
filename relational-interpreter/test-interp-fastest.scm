@@ -158,8 +158,8 @@
            '(a b c d e)))
         '((null? l)
           (equal? l '())
-          ((((lambda _.0 null?)) l) (=/= ((_.0 null?))) (sym _.0))
-          (equal? '() l))))
+          (equal? '() l)
+          (equal? l (list)))))
 
 (time (test "append-12"
         (run 1 (q r)
