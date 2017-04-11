@@ -64,6 +64,22 @@
            (num _.0 _.1 _.3)
            (sym _.2 _.4 _.5)))))
 
+(time (test "map-4"
+        (run 1 (q r)
+          (evalo
+           `(letrec ((map
+                      (lambda (p ls)
+                        (if (null? ls)
+                            '()
+                            (cons (p (car ls)) (map p (cdr ls)))))))
+              (map ,q ,r))
+           '(#f #f #t #f #t #t)))
+        '(((not
+            (cdr '(_.0 _.1 _.2 #f _.3 #f #f)))
+           (=/= ((_.1 #f)) ((_.2 #f)) ((_.3 #f)))
+           (absento (closure _.0) (closure _.1) (closure _.2) (closure _.3) (prim _.0) (prim _.1) (prim _.2) (prim _.3))))))
+
+
 ;; append tests
 
 (time (test "append-0"
