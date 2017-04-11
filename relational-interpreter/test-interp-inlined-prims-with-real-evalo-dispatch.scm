@@ -386,6 +386,55 @@
              (d e . f))))
         '(((null? l) s cons (car l)))))
 
+(time (test "append-20"
+        (run 1 (q r s)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if (null? l)
+                            s
+                            (cons (car l) (append (,q ,r) ,s))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '((cdr l s))))
+
+#|
+;; doesn't seem to come back, at least no time soon
+(time (test "append-21"
+        (run 1 (q r s)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if (null? l)
+                            s
+                            (cons (car l) (append (,q . ,r) ,s))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '((cdr l s))))
+|#
+
 ;; We use the relational Racket interpreter, extended to support 'and'
 ;; and 'or', to allow us to write a simple proof checker for
 ;; propositional logic as a Racket function.  Because we can treat the
