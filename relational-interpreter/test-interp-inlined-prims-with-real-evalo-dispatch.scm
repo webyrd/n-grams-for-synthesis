@@ -30,7 +30,7 @@
         '((a b c d e))))
 
 (time (test "append-2"
-        (run 2 (q)
+        (run 3 (q)
           (evalo
            `(letrec ((append
                       (lambda (l s)
@@ -39,8 +39,9 @@
                             (cons (car l) (append (cdr l) s))))))
               (append ,q '(d e)))
            '(a b c d e)))
-        '('(a b c)
-          (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))))
+        '(((cdr '(_.0 a b c)) (absento (closure _.0) (prim _.0)))
+          ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0)))
+          '(a b c))))
 
 (time (test "append-3"
         (run* (q)
@@ -409,8 +410,6 @@
              (d e . f))))
         '((cdr l s))))
 
-#|
-;; doesn't seem to come back, at least no time soon
 (time (test "append-21"
         (run 1 (q r s)
           (absento 'a r)
@@ -432,7 +431,32 @@
            '(a
              (b . c)
              (d e . f))))
-        '((cdr l s))))
+        '((cdr (l) s))))
+
+#|
+;; doesn't seem to come back anytime soon
+(time (test "append-22"
+        (run 1 (q r)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if (null? l)
+                            s
+                            (cons (car l) (append ,q ,r))))))
+              (list
+               (append '() 'a)
+               (append '(b) 'c)
+               (append '(d e) 'f)))
+           '(a
+             (b . c)
+             (d e . f))))
+        '((cdr (l) s))))
 |#
 
 ;; We use the relational Racket interpreter, extended to support 'and'
