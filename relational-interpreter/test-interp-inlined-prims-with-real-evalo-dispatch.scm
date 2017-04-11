@@ -160,6 +160,46 @@
           ((((lambda _.0 null?)) l) (=/= ((_.0 null?))) (sym _.0))
           (equal? '() l))))
 
+(time (test "append-12"
+        (run 1 (q r)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (cons (car l) (append (cdr l) s))))))
+              (append '(a b c) '(d e)))
+           '(a b c d e)))
+        '(((null? l) s))))
+
+(time (test "append-13"
+        (run 1 (q r)
+          (absento 'a r)
+          (absento 'b r)
+          (absento 'c r)
+          (absento 'd r)
+          (absento 'e r)
+          (absento 'f r)
+          (evalo
+           `(letrec ((append
+                      (lambda (l s)
+                        (if ,q
+                            ,r
+                            (cons (car l) (append (cdr l) s))))))
+              (list
+               (append '() '())
+               (append '(a) '(b))
+               (append '(c d) '(e f))))
+           '(()
+             (a b)
+             (c d e f))))
+        '(((null? l) s))))
+
 
 ;; We use the relational Racket interpreter, extended to support 'and'
 ;; and 'or', to allow us to write a simple proof checker for
