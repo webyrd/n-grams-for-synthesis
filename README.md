@@ -7,3 +7,7 @@ The ideas explored in this repo are inspired by conversations and hacking sessio
 This latest attempt at n-gram-based guided search was inspired by Rob Zinkov hosting Will Byrd at University of Oxford in January of 02018.  Rob has been hacking on getting a larger corpus of trainign programs, while Will has been working on how to better integrate the resulting probabilities into the relational interpreters.
 
 Many thanks to everyone who has helped improve the ideas and code!
+
+TODO
+
+Benchmarks for fairly comparing Barliman interpreter with optimizations, the vanilla full interpreter, and full interpreters with guided search.   Complications: beware of `boolean-conditions-only?` and `allow-incomplete-search?` flags in the Barliman interpreter, and the application "cheat" in the `old_code/advanced_hangout_7_version/interp-fastest-fixed-application-optimization.scm` interpreter. Also, the full Barliman interpreter includes other optimizations not included in the `old_code/advanced_hangout_7_version/interp-fastest-fixed-application-optimization.scm` interpreter.
