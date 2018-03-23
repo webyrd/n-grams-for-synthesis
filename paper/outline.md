@@ -24,9 +24,9 @@ those kinds of programs.
 ### Compare mk without vanilla search to mk with neural search
 
 ### Use mk with Neural search to recover larger programs
-### Demonstrate mk doing differential synthesis: lex and dyn in icfp 2017 pearl, or CBV vs CBN
-### Train on both type inferencer and evaluator, and show that the combination avoids generate and test
-### Synthesize interesting parts of the Scheme interp, or microKanren
+#### Demonstrate mk doing differential synthesis: lex and dyn in icfp 2017 pearl, or CBV vs CBN
+#### Train on both type inferencer and evaluator, and show that the combination avoids generate and test
+#### Synthesize interesting parts of the Scheme interp, or microKanren
 
 ## Related Work on Neural Search and program synthesis
 
