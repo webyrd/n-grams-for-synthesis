@@ -29,8 +29,7 @@
                   [#f
                    (list (list 'bool parent))]
                   [,n (guard (number? n))
-                   (list (list 'num parent))]                  
-                  ;; FIXME (webyrd) -- symbol?, and perhaps other type predicates, doesn't handle booleans (fails)
+                   (list (list 'num parent))]
                   [,x (guard (symbol? x))
                    (list
                      (cond
