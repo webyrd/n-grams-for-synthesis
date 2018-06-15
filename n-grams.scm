@@ -159,23 +159,20 @@
 ;; this is the important one
 (define bigrams-sorted-by-type/counts (sort-counts-al-by-type/counts bigram-counts))
 
-
-(define sum-entry-types
-  (lambda (alist)
+(define merge-entries
+  (lambda (alist key-f)
     (let loop ((alist alist)
                (table '()))
       (pmatch alist
-        [() (list-sort (lambda (e1 e2) (> (cdr e1) (cdr e2))) table)]
-        [(((,parent ,entry) . ,n) . ,rest)
-         (cond
-           [(assoc entry table) =>
-            (lambda (pr)
-              (let ((m (cdr pr)))
-                (loop rest (cons (cons entry (+ n m)) (remove pr table)))))]
-           [else (loop rest (cons (cons entry n) table))])]))))
-
-(define global-frequency-ordering
-  (sum-entry-types bigrams-sorted-by-type/counts))
+        [() table]
+        [((,k . ,n) . ,rest)
+         (let ((key (key-f k)))
+           (cond
+             [(assoc key table) =>
+              (lambda (pr)
+                (let ((m (cdr pr)))
+                  (loop rest (cons (cons key (+ n m)) (remove pr table)))))]
+             [else (loop rest (cons (cons key n) table))]))]))))
 
 (define prim-ops
   '(cons
@@ -185,3 +182,32 @@
     equal?
     symbol?
     null?))
+
+(define prim-op-counts-only
+  (filter (lambda (x)
+            (pmatch x
+              [((,parent ,element) . ,n)
+               (member element prim-ops)]))
+          bigrams-sorted-by-type/counts))
+
+(define non-prim-op-counts-only
+  (filter (lambda (x)
+            (pmatch x
+              [((,parent ,element) . ,n)
+               (not (member element prim-ops))]))
+          bigrams-sorted-by-type/counts))
+
+(define 
+  (append (map (lambda (e)
+               (pmatch e
+                 [(,a . ,d)
+                  `((,a prim-op) . ,d)]))
+             (merge-entries prim-op-counts-only
+                            car))
+        non-prim-op-counts-only))
+
+
+(define global-frequency-ordering
+  (list-sort (lambda (e1 e2) (> (cdr e1) (cdr e2)))
+             (merge-entries bigrams-sorted-by-type/counts
+                            cadr)))
