@@ -174,48 +174,10 @@
                   (loop rest (cons (cons key (+ n m)) (remove pr table)))))]
              [else (loop rest (cons (cons key n) table))]))]))))
 
-(define prim-ops
-  '(list
-    cons
-    car
-    cdr
-    not
-    equal?
-    symbol?
-    null?))
-
-(define prim-op-counts-only
-  (filter (lambda (x)
-            (pmatch x
-              [((,parent ,element) . ,n)
-               (member element prim-ops)]))
-          bigrams-sorted-by-type/counts))
-
-(define non-prim-op-counts-only
-  (filter (lambda (x)
-            (pmatch x
-              [((,parent ,element) . ,n)
-               (not (member element prim-ops))]))
-          bigrams-sorted-by-type/counts))
-
-(define special-form-counts
-  (append (map (lambda (e)
-               (pmatch e
-                 [(,a . ,d)
-                  `((,a prim-op) . ,d)]))
-             (merge-entries prim-op-counts-only
-                            car))
-        non-prim-op-counts-only))
-
 (define alist-value-descending-comparator
   (lambda (e1 e2) (> (cdr e1) (cdr e2))))
 
 (define global-frequency-ordering
   (list-sort alist-value-descending-comparator
-             (merge-entries special-form-counts
-                            cadr)))
-
-(define primop-frequency-ordering
-  (list-sort alist-value-descending-comparator
-             (merge-entries prim-op-counts-only
+             (merge-entries bigrams-sorted-by-type/counts
                             cadr)))
