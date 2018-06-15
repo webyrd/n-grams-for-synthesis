@@ -1,3 +1,5 @@
+;; TODO possibly consider restricting the language even more (require test of 'if' to be be a boolean, for example)
+
 ;; TODO lift out all clauses in eval-expo into their own helper functions
 
 ;; TODO test meeeee!!!!
