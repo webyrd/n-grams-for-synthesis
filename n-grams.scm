@@ -12,8 +12,10 @@
                    (error 'bigrams-for-expr (format "unconverted eqv?"))]
                   [(cond . ,c*)
                    (error 'bigrams-for-expr (format "unconverted cond"))]
-                  [(match . ,c*) ;; need to handle 'match-against and 'match-result
-                   (error 'bigrams-for-expr (format "unconverted match"))]
+                  [(match ,e . ,c*)
+                   (cons (list 'match parent)
+                         (append (bigrams-for-expr e 'match-against defn-name args)
+                                 (apply append (map (lambda (c) (bigrams-for-expr (cadr c) 'match-body defn-name args)) c*))))]
                   [(quote ())
                    (list (list 'nil parent))]
                   [(quote ,x) (guard (symbol? x))
