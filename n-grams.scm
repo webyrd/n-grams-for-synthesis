@@ -51,10 +51,10 @@
                                  (bigrams-for-expr alt 'if-alt defn-name args)))]
                   [(symbol? ,e)
                    (cons (list 'symbol? parent)
-                         (bigrams-for-expr e 'symbol? defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(not ,e)
                    (cons (list 'not parent)
-                         (bigrams-for-expr e 'not defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(and . ,e*)
                    (cons (list 'and parent)
                          (apply append (map (lambda (e) (bigrams-for-expr e 'and defn-name args)) e*)))]
@@ -66,24 +66,24 @@
                          (apply append (map (lambda (e) (bigrams-for-expr e 'list defn-name args)) e*)))]
                   [(null? ,e)
                    (cons (list 'null? parent)
-                         (bigrams-for-expr e 'null? defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(pair? ,e)
                    (cons (list 'pair? parent)
-                         (bigrams-for-expr e 'pair? defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(car ,e)
                    (cons (list 'car parent)
-                         (bigrams-for-expr e 'car defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(cdr ,e)
                    (cons (list 'cdr parent)
-                         (bigrams-for-expr e 'cdr defn-name args))]
+                         (bigrams-for-expr e 'prim-op defn-name args))]
                   [(cons ,e1 ,e2)
                    (cons (list 'cons parent)
-                         (append (bigrams-for-expr e1 'cons-a defn-name args)
-                                 (bigrams-for-expr e2 'cons-d defn-name args)))]
+                         (append (bigrams-for-expr e1 'prim-op defn-name args)
+                                 (bigrams-for-expr e2 'prim-op defn-name args)))]
                   [(equal? ,e1 ,e2)
                    (cons (list 'equal? parent)
-                         (append (bigrams-for-expr e1 'equal? defn-name args)
-                                 (bigrams-for-expr e2 'equal? defn-name args)))]
+                         (append (bigrams-for-expr e1 'prim-op defn-name args)
+                                 (bigrams-for-expr e2 'prim-op defn-name args)))]
                   [(let ,binding* ,e)
                    (cons (list 'let parent)
                          (append (apply append (map (lambda (binding) (bigrams-for-expr (cadr binding) 'let-rhs defn-name args)) binding*))
@@ -176,6 +176,15 @@
 
 (define global-frequency-ordering
   (sum-entry-types bigrams-sorted-by-type/counts))
+
+(define prim-ops
+  '(cons
+    car
+    cdr
+    not
+    equal?
+    symbol?
+    null?))
 
 #!eof
 
