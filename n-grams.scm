@@ -17,11 +17,11 @@
                          (append (bigrams-for-expr e 'match-against defn-name args)
                                  (apply append (map (lambda (c) (bigrams-for-expr (cadr c) 'match-body defn-name args)) c*))))]
                   [(quote ())
-                   (list (list 'nil parent))]
+                   (list (list 'quoted-datum parent))]
                   [(quote ,x) (guard (symbol? x))
-                   (list (list 'quoted-symbol parent))]
+                   (list (list 'quoted-datum parent))]
                   [(quote ,ls) (guard (list? ls))
-                   (list (list 'quoted-non-empty-list parent))]
+                   (list (list 'quoted-datum parent))]
                   [(quote ,_)
                    (error 'bigrams-for-expr (format "unknown quoted form ~s" _))]                  
                   [#t
@@ -187,17 +187,15 @@
  ((app-rand* cdr) . 66)
  ((app-rand* car) . 40)
  ((app-rand* app) . 25)
+ ((app-rand* quoted-datum) . 6)
  ((app-rand* lambda) . 4)
  ((app-rand* cons) . 3)
  ((app-rand* list) . 3)
- ((app-rand* nil) . 3)
- ((app-rand* quoted-non-empty-list) . 2)
  ((app-rand* if) . 1)
  ((app-rand* null?) . 1)
- ((app-rand* quoted-symbol) . 1)
  ((app-rator var) . 155)
  ((app-rator app) . 1)
- ((app-rator quoted-symbol) . 1)
+ ((app-rator quoted-datum) . 1)
  ((car var) . 85)
  ((car cdr) . 6)
  ((car car) . 2)
@@ -216,7 +214,7 @@
  ((define lambda) . 44)
  ((equal? car) . 23)
  ((equal? var) . 20)
- ((equal? quoted-symbol) . 3)
+ ((equal? quoted-datum) . 3)
  ((if-alt if) . 41)
  ((if-alt app) . 23)
  ((if-alt cons) . 17)
@@ -225,7 +223,7 @@
  ((if-alt equal?) . 1)
  ((if-alt or) . 1)
  ((if-conseq bool) . 26)
- ((if-conseq nil) . 15)
+ ((if-conseq quoted-datum) . 15)
  ((if-conseq app) . 10)
  ((if-conseq cons) . 10)
  ((if-conseq var) . 8)
@@ -251,14 +249,14 @@
  ((list var) . 9)
  ((list car) . 2)
  ((list list) . 1)
- ((list quoted-symbol) . 1)
+ ((list quoted-datum) . 1)
  ((match-against var) . 3)
  ((match-body app) . 6)
  ((match-body var) . 2)
  ((match-body and) . 1)
  ((match-body cons) . 1)
  ((match-body lambda) . 1)
- ((match-body nil) . 1)
+ ((match-body quoted-datum) . 1)
  ((not pair?) . 1)
  ((null? var) . 46)
  ((null? cdr) . 1)
