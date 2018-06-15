@@ -159,6 +159,24 @@
 ;; this is the important one
 (define bigrams-sorted-by-type/counts (sort-counts-al-by-type/counts bigram-counts))
 
+
+(define sum-entry-types
+  (lambda (alist)
+    (let loop ((alist alist)
+               (table '()))
+      (pmatch alist
+        [() (list-sort (lambda (e1 e2) (> (cdr e1) (cdr e2))) table)]
+        [(((,parent ,entry) . ,n) . ,rest)
+         (cond
+           [(assoc entry table) =>
+            (lambda (pr)
+              (let ((m (cdr pr)))
+                (loop rest (cons (cons entry (+ n m)) (remove pr table)))))]
+           [else (loop rest (cons (cons entry n) table))])]))))
+
+(define global-frequency-ordering
+  (map car (sum-entry-types bigrams-sorted-by-type/counts)))
+
 #!eof
 
 ;; bigrams-sorted-by-type/counts
