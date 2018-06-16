@@ -24,22 +24,27 @@
 
 (define test-runner
   (lambda (timeout . test*)
-    (test-runner-aux test* '() timeout)))
+    (test-runner-aux test* '() timeout print-test-result)))
+
+(define test-runner-build-table
+  (lambda (timeout . test*)
+    (test-runner-aux test* '() timeout (lambda (_) (void)))))
+
 
 (define test-runner-aux
-  (lambda (tests acc timeout)
+  (lambda (tests acc timeout f)
     (cond
       ((null? tests) acc)
       (else (let ((res ((car tests) timeout)))
-              (print-test-result res)
-              (test-runner-aux (cdr tests) (cons res acc) timeout))))))
+              (f res)
+              (test-runner-aux (cdr tests) (cons res acc) timeout f))))))
 
 (define print-test-result
   (lambda (res)
     (pmatch res
       [(,status ,title ,tested-expression ,expected ,produced ,stats)
        (when (not (eqv? 'success status))
-         (display "!! "))       
+         (display "!! "))
        (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])))
 
 (define time->inexact-seconds
