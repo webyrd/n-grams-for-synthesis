@@ -3,10 +3,13 @@
 (load "test-check.scm")
 (load "interp-simplified.scm")
 
+(test-runner
+ ;; timeout in ticks
+ 500000000
 
 ;; append tests
 
-(time (test "append-0"
+ (test "append-0"
         (run* (q)
           (evalo
            `(letrec ((append
@@ -16,9 +19,9 @@
                             (cons (car l) (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '((_.0))))
+        '((_.0)))
 
-(time (test "append-1"
+ (test "append-1"
         (run* (q)
           (evalo
            `(letrec ((append
@@ -28,9 +31,9 @@
                             (cons (car l) (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            q))
-        '(((a b c d e)))))
+        '(((a b c d e))))
 
-(time (test "append-2"
+ (test "append-2"
         (run 2 (q)
           (evalo
            `(letrec ((append
@@ -41,9 +44,9 @@
               (append ,q '(d e)))
            '(a b c d e)))
         '(('(a b c))
-          ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))))
+          ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0)))))
 
-(time (test "append-3"
+ (test "append-3"
         (run* (q)
           (evalo
            `(letrec ((append
@@ -53,9 +56,9 @@
                             (cons (car l) (append (cdr l) s))))))
               (append ',q '(d e)))
            '(a b c d e)))
-        '(((a b c)))))
+        '(((a b c))))
 
-(time (test "append-4"
+ (test "append-4"
         (run* (q r)
           (evalo
            `(letrec ((append
@@ -70,9 +73,9 @@
           (((a b) (c d e)))
           (((a b c) (d e)))
           (((a b c d) (e)))
-          (((a b c d e) ())))))
+          (((a b c d e) ()))))
 
-(time (test "append-5"
+ (test "append-5"
         (run 1 (q)
           (evalo
            `(letrec ((append
@@ -82,9 +85,9 @@
                             (cons ,q (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((car l)))))
+        '(((car l))))
 
-(time (test "append-6"
+ (test "append-6"
         (run 1 (q)
           (evalo
            `(letrec ((append
@@ -94,9 +97,9 @@
                             (cons (car l) (append (cdr ,q) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '((l))))
+        '((l)))
 
-(time (test "append-7"
+ (test "append-7"
         (run 1 (q)
           (evalo
            `(letrec ((append
@@ -106,9 +109,9 @@
                             (cons (car l) (append (,q l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '((cdr))))
+        '((cdr)))
 
-(time (test "append-8"
+ (test "append-8"
         (run 1 (q r)
           (symbolo q)
           (symbolo r)
@@ -120,9 +123,9 @@
                             (cons (car l) (append (,q ,r) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((cdr l)))))
+        '(((cdr l))))
 
-(time (test "append-9"
+ (test "append-9"
         (run 1 (q r)
           (evalo
            `(letrec ((append
@@ -132,9 +135,9 @@
                             (cons (car l) (append (,q ,r) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((cdr l)))))
+        '(((cdr l))))
 
-(time (test "append-10"
+ (test "append-10"
         (run 1 (q)
           (evalo
            `(letrec ((append
@@ -144,9 +147,9 @@
                             (cons (car l) (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((null? l)))))
+        '(((null? l))))
 
-(time (test "append-11"
+ (test "append-11"
         (run 4 (q)
           (evalo
            `(letrec ((append
@@ -159,11 +162,11 @@
         '(((null? l))
           (((lambda () (null? l))))
           ((null? ((lambda () l))))
-          ((equal? '() l)))))
+          ((equal? '() l))))
 
 ;; slooow--didnt complete in 30 seconds
-#|
-(time (test "append-12"
+
+ (test "append-12"
         (run 1 (q r)
           (absento 'a r)
           (absento 'b r)
@@ -178,12 +181,12 @@
                             (cons (car l) (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((null? l) s))))
-|#
+        '(((null? l) s)))
+
 
 ;; slooow--didnt complete in 30 seconds
 #|
-(time (test "append-13"
+ (test "append-13"
         (run 1 (q r)
           (absento 'a r)
           (absento 'b r)
@@ -204,12 +207,12 @@
            '(()
              (a b)
              (c d e f))))
-        '(((null? l) s))))
+        '(((null? l) s)))
 |#
 
 ;; slooow--didnt complete in 30 seconds
 #|
-(time (test "append-14"
+ (test "append-14"
         (run 1 (q r s)
           (absento 'a r)
           (absento 'b r)
@@ -230,26 +233,26 @@
            '(()
              (a b)
              (c d e f))))
-        '(((null? l) s cons))))
+        '(((null? l) s cons)))
 |#
 
 
 ;; and tests
-(time (test "and-0"
+ (test "and-0"
         (run* (q) (evalo '(and) q))
-        '((#t))))
+        '((#t)))
 
-(time (test "and-1"
+ (test "and-1"
         (run* (q) (evalo '(and 5) q))
-        '((5))))
+        '((5)))
 
-(time (test "and-2"
+ (test "and-2"
         (run* (q) (evalo '(and #f) q))
-        '((#f))))
+        '((#f)))
 
-(time (test "and-3"
+ (test "and-3"
         (run* (q) (evalo '(and 5 6) q))
-        '((6))))
+        '((6)))
 
 (test "and-4"
   (run* (q) (evalo '(and #f 6) q))
@@ -293,7 +296,7 @@
   (run* (q) (evalo '(or (null? '(a b c)) 6) q))
   '((6)))
 
-(time
+
   (test "proof-1"
     (run* (q)
       (evalo
@@ -323,9 +326,9 @@
                          (assumption (A (if A B) (if B C)) () A)) B))
                       C))))
        q))
-    '((#t))))
+    '((#t)))
 
-(time
+
   (test "proof-2b"
     (run* (prf)
       (fresh (rule assms ants)
@@ -366,9 +369,9 @@
                                     ((assumption (A (if A B) (if B C)) () (if A B))
                                      (assumption (A (if A B) (if B C)) () A))
                                     B))
-                     C)))))
+                     C))))
 
-(time
+
   (test "proof-2c"
     (run 1 (prf)
       (fresh (rule assms ants)
@@ -402,9 +405,9 @@
                                     ((assumption (A (if A B) (if B C)) () (if A B))
                                      (assumption (A (if A B) (if B C)) () A))
                                     B))
-                     C)))))
+                     C))))
 
-(time
+
   (test "generate-theorems/proofs"
     (length (run 20 (prf)
               (evalo
@@ -427,9 +430,9 @@
                                              (proof? (list r2 assms ants2 A)))]))))
                     (proof? ',prf)))
                #t)))
-    '20))
+    '20)
 
-(time
+
   (test "generate-theorems/proofs-using-modus-ponens"
     (length (run 20 (prf)
               (fresh (assms ants conseq)
@@ -454,9 +457,9 @@
                                                (proof? (list r2 assms ants2 A)))]))))
                       (proof? ',prf)))
                  #t))))
-    '20))
+    '20)
 
-(time
+
   (test "generate-non-theorems/proofs"
     (length (run 20 (prf)
               (evalo
@@ -479,7 +482,7 @@
                                              (proof? (list r2 assms ants2 A)))]))))
                     (proof? ',prf)))
                #f)))
-    '20))
+    '20)
 
 
 
@@ -489,7 +492,7 @@
 ; num
 ; symbol?
 ; not
-(time
+
   (test 'stupor-test-1
     (run* (q)
       (evalo '(letrec ((assoc (lambda (x l)
@@ -501,12 +504,12 @@
                                          (car l))))))
                 (assoc 'foo '((bar . 1) (baz . 2) (42 . ignore) (foo . 3) (quux . 4))))
              q))
-    '(((foo . 3)))))
+    '(((foo . 3))))
 
 
 ;; append
 
-(time
+
   (test 'append-simple-1
     (run* (q)
       (evalo '(letrec ((append (lambda (l s)
@@ -516,9 +519,9 @@
                                            (append (cdr l) s))))))
                 (append '(1 2 3) '(4 5)))
              q))
-    '(((1 2 3 4 5)))))
+    '(((1 2 3 4 5))))
 
-(time
+
   (test 'append-simple-2
     (run* (q)
       (evalo `(letrec ((append (lambda (l s)
@@ -528,9 +531,9 @@
                                            (append (cdr l) s))))))
                 (append ',q '(4 5)))
              '(1 2 3 4 5)))
-    '(((1 2 3)))))
+    '(((1 2 3))))
 
-(time
+
   (test 'append-simple-3
     (run* (x y)
       (evalo `(letrec ((append (lambda (l s)
@@ -545,11 +548,11 @@
       (((1 2) (3 4 5)))
       (((1 2 3) (4 5)))
       (((1 2 3 4) (5)))
-      (((1 2 3 4 5) ())))))
+      (((1 2 3 4 5) ()))))
 
 ;; Tests from 2017 pearl
 
-(time
+
   (test "proof-backwards-explicit-member?"
     (run 1 (prf)
       (fresh (rule assms ants)
@@ -583,9 +586,9 @@
                                     ((assumption (A (if A B) (if B C)) () (if A B))
                                      (assumption (A (if A B) (if B C)) () A))
                                     B))
-                     C)))))
+                     C))))
 
-(time
+
   (test "check quine"
     (run 1 (q)
       (== q '((lambda (x) `(,x ',x)) '(lambda (x) `(,x ',x))))
@@ -617,4 +620,6 @@
             (eval-expr ',q
                        'initial-env)))
        q))
-    (list '(((lambda (x) `(,x ',x)) '(lambda (x) `(,x ',x)))))))
+    (list '(((lambda (x) `(,x ',x)) '(lambda (x) `(,x ',x))))))
+ 
+ )
