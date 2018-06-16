@@ -20,100 +20,167 @@
 
 (define (eval-expo expr env val)
   (conde
-    ((== `(quote ,val) expr)
-     (absento 'closure val)
-     (absento 'prim val))
+    ((quote-evalo expr env val))
 
-    ((numbero expr) (== expr val))
+    ((num-evalo expr env val))
 
     ((bool-evalo expr env val))
     
-    ((symbolo expr) (lookupo expr env val))
+    ((var-evalo expr env val))
 
-    ((fresh (x body)
-       (== `(lambda ,x ,body) expr)
-       (== `(closure (lambda ,x ,body) ,env) val)
-       (list-of-symbolso x)))
+    ((lambda-evalo expr env val))
 
-    ((fresh (rator x* rands body env^ a* res)
-       (== `(,rator . ,rands) expr)
-       ;; Multi-argument
-       (eval-expo rator env `(closure (lambda ,x* ,body) ,env^))
-       (eval-listo rands env a*)
-       (ext-env*o x* a* env^ res)
-       (eval-expo body res val)))
+    ((app-evalo expr env val))
 
-    ((fresh (e d)
-       (== `(car ,e) expr)
-       (=/= 'closure a)
-       (eval-expo e env `(,val . ,d))))
+    ((car-evalo expr env val))
     
-    ((fresh (e a)
-       (== `(cdr ,e) expr)
-       (=/= 'closure a)
-       (eval-expo e env `(,a . ,val))))
+    ((cdr-evalo expr env val))
     
-    ((fresh (e v)
-       (== `(null? ,e) expr)
-       (conde
-         ((== '() v) (== #t val))
-         ((=/= '() v) (== #f val)))
-       (eval-expo e env v)))
+    ((null-evalo expr env val))
 
-    ((fresh (e1 e2 v1 v2)
-       (== `(cons ,e1 ,e2) expr)
-       (== `(,v1 . ,v2) val)
-       (eval-expo e1 env v1)
-       (eval-expo e2 env v2)))
+    ((cons-evalo expr env val))
 
     ((if-evalo expr env val))
 
-    ((fresh (e1 e2 v1 v2)
-       (== `(equal? ,e1 ,e2) expr)
-       (conde
-         ((== v1 v2) (== #t val))
-         ((=/= v1 v2) (== #f val)))
-       (eval-expo e1 env v1)
-       (eval-expo e2 env v2)))
+    ((equal?-evalo expr env val))
 
     ((and-evalo expr env val))
 
     ((or-evalo expr env val))
 
-    ((fresh (rands a*)
-       (== `(list . ,rands) expr)
-       (== a* val)
-       (eval-listo rands env a*)))
+    ((list-evalo expr env val))
     
-    ((fresh (e v)
-       (== `(symbol? ,e) expr)
-       (conde
-         ((symbolo v) (== #t val))
-         ((not-symbolo v) (== #f val)))
-       (eval-expo e env v)))
+    ((symbol?-evalo expr env val))
     
-    ((fresh (e v)
-       (== `(not ,e) expr)
-       (conde
-         ((=/= #f v) (== #f val))
-         ((== #f v) (== #t val)))
-       (eval-expo e env v)))    
+    ((not-evalo expr env val))    
 
-    ((fresh (p-name x body letrec-body)
-       ;; single-function muti-argument letrec version
-       (== `(letrec ((,p-name (lambda ,x ,body)))
-              ,letrec-body)
-           expr)
-       (list-of-symbolso x)
-       (eval-expo letrec-body
-                  `((,p-name . (rec . (lambda ,x ,body))) . ,env)
-                  val)))
+    ((letrec-evalo expr env val))
     
     ((match-evalo expr env val))
     
     ))
 
-(define empty-env '())
+
+
+(define (quote-evalo expr env val)
+  (fresh ()
+    (== `(quote ,val) expr)
+    (absento 'closure val)
+    (absento 'prim val)))
+
+(define (num-evalo expr env val)
+  (fresh ()
+    (numbero expr)
+    (== expr val)))
+
+(define (bool-evalo expr env val)
+  (conde
+    ((== #t expr) (== #t val))
+    ((== #f expr) (== #f val))))
+
+(define (var-evalo expr env val)
+  (fresh ()
+    (symbolo expr)
+    (lookupo expr env val)))
+
+(define (lambda-evalo expr env val)
+  (fresh (x body)
+    (== `(lambda ,x ,body) expr)
+    (== `(closure (lambda ,x ,body) ,env) val)
+    (list-of-symbolso x)))
+
+(define (app-evalo expr env val)
+  (fresh (rator x* rands body env^ a* res)
+    (== `(,rator . ,rands) expr)
+    ;; Multi-argument
+    (eval-expo rator env `(closure (lambda ,x* ,body) ,env^))
+    (eval-listo rands env a*)
+    (ext-env*o x* a* env^ res)
+    (eval-expo body res val)))
+
+(define (car-evalo expr env val)
+  (fresh (e d)
+    (== `(car ,e) expr)
+    (=/= 'closure a)
+    (eval-expo e env `(,val . ,d))))
+
+(define (cdr-evalo expr env val)
+  (fresh (e a)
+    (== `(cdr ,e) expr)
+    (=/= 'closure a)
+    (eval-expo e env `(,a . ,val))))
+
+(define (null-evalo expr env val)
+  (fresh (e v)
+    (== `(null? ,e) expr)
+    (conde
+      ((== '() v) (== #t val))
+      ((=/= '() v) (== #f val)))
+    (eval-expo e env v)))
+
+(define (cons-evalo expr env val)
+  (fresh (e1 e2 v1 v2)
+    (== `(cons ,e1 ,e2) expr)
+    (== `(,v1 . ,v2) val)
+    (eval-expo e1 env v1)
+    (eval-expo e2 env v2)))
+
+(define (if-evalo expr env val)
+  (fresh (e1 e2 e3 t)
+    (== `(if ,e1 ,e2 ,e3) expr)
+    (eval-expo e1 env t)
+    (conde
+      ((=/= #f t) (eval-expo e2 env val))
+      ((== #f t) (eval-expo e3 env val)))))
+
+(define (equal?-evalo expr env val)
+  (fresh (e1 e2 v1 v2)
+    (== `(equal? ,e1 ,e2) expr)
+    (conde
+      ((== v1 v2) (== #t val))
+      ((=/= v1 v2) (== #f val)))
+    (eval-expo e1 env v1)
+    (eval-expo e2 env v2)))
+
+(define (and-evalo expr env val)
+  (fresh (e*)
+    (== `(and . ,e*) expr)
+    (ando e* env val)))
+
+(define (list-evalo expr env val)
+  (fresh (rands a*)
+    (== `(list . ,rands) expr)
+    (== a* val)
+    (eval-listo rands env a*)))
+
+(define (symbol?-evalo expr env val)
+  (fresh (e v)
+    (== `(symbol? ,e) expr)
+    (conde
+      ((symbolo v) (== #t val))
+      ((not-symbolo v) (== #f val)))
+    (eval-expo e env v)))
+
+(define (not-evalo expr env val)
+  (fresh (e v)
+    (== `(not ,e) expr)
+    (conde
+      ((=/= #f v) (== #f val))
+      ((== #f v) (== #t val)))
+    (eval-expo e env v)))
+
+(define (letrec-evalo expr env val)
+  (fresh (p-name x body letrec-body)
+    ;; single-function muti-argument letrec version
+    (== `(letrec ((,p-name (lambda ,x ,body)))
+           ,letrec-body)
+        expr)
+    (list-of-symbolso x)
+    (eval-expo letrec-body
+               `((,p-name . (rec . (lambda ,x ,body))) . ,env)
+               val)))
+
+
 
 (define (lookupo x env t)
   (fresh (y b rest)
@@ -158,16 +225,6 @@
        (symbolo x)
        (ext-env*o dx* da* env2 out)))))
 
-(define (bool-evalo expr env val)
-  (conde
-    ((== #t expr) (== #t val))
-    ((== #f expr) (== #f val))))
-
-(define (and-evalo expr env val)
-  (fresh (e*)
-    (== `(and . ,e*) expr)
-    (ando e* env val)))
-
 (define (ando e* env val)
   (conde
     ((== '() e*) (== #t val))
@@ -183,11 +240,6 @@
          ((=/= #f v)
           (eval-expo e1 env v)
           (ando `(,e2 . ,e-rest) env val)))))))
-
-(define (or-evalo expr env val)
-  (fresh (e*)
-    (== `(or . ,e*) expr)
-    (oro e* env val)))
 
 (define (oro e* env val)
   (conde
@@ -205,13 +257,9 @@
           (eval-expo e1 env v)
           (oro `(,e2 . ,e-rest) env val)))))))
 
-(define (if-evalo expr env val)
-  (fresh (e1 e2 e3 t)
-    (== `(if ,e1 ,e2 ,e3) expr)
-    (eval-expo e1 env t)
-    (conde
-      ((=/= #f t) (eval-expo e2 env val))
-      ((== #f t) (eval-expo e3 env val)))))
+
+
+
 
 (define match-evalo
   (lambda  (expr env val)
@@ -380,3 +428,6 @@
          ((quasi-p-no-match a v1 penv penv^))
          ((quasi-p-match a v1 penv penv^)
           (quasi-p-no-match d v2 penv^ penv-out)))))))
+
+
+(define empty-env '())
