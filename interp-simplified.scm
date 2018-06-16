@@ -1,5 +1,3 @@
-;; TODO possibly consider restricting the language even more (require test of 'if' to be be a boolean, for example)
-
 ;; TODO lift out all clauses in eval-expo into their own helper functions
 
 ;; TODO test meeeee!!!!
@@ -28,7 +26,7 @@
 
     ((numbero expr) (== expr val))
 
-    ((boolean-primo expr env val))
+    ((bool-evalo expr env val))
     
     ((symbolo expr) (lookupo expr env val))
 
@@ -68,7 +66,7 @@
        (eval-expo e1 env v1)
        (eval-expo e2 env v2)))
 
-    ((if-primo expr env val))
+    ((if-evalo expr env val))
 
     ((fresh (e1 e2 v1 v2)
        (== `(equal? ,e1 ,e2) expr)
@@ -78,9 +76,9 @@
        (eval-expo e1 env v1)
        (eval-expo e2 env v2)))
 
-    ((and-primo expr env val))
+    ((and-evalo expr env val))
 
-    ((or-primo expr env val))
+    ((or-evalo expr env val))
 
     ((fresh (rands a*)
        (== `(list . ,rands) expr)
@@ -111,7 +109,7 @@
                   `((,p-name . (rec . (lambda ,x ,body))) . ,env)
                   val)))
     
-    ((handle-matcho expr env val))
+    ((match-evalo expr env val))
     
     ))
 
@@ -160,12 +158,12 @@
        (symbolo x)
        (ext-env*o dx* da* env2 out)))))
 
-(define (boolean-primo expr env val)
+(define (bool-evalo expr env val)
   (conde
     ((== #t expr) (== #t val))
     ((== #f expr) (== #f val))))
 
-(define (and-primo expr env val)
+(define (and-evalo expr env val)
   (fresh (e*)
     (== `(and . ,e*) expr)
     (ando e* env val)))
@@ -186,7 +184,7 @@
           (eval-expo e1 env v)
           (ando `(,e2 . ,e-rest) env val)))))))
 
-(define (or-primo expr env val)
+(define (or-evalo expr env val)
   (fresh (e*)
     (== `(or . ,e*) expr)
     (oro e* env val)))
@@ -207,7 +205,7 @@
           (eval-expo e1 env v)
           (oro `(,e2 . ,e-rest) env val)))))))
 
-(define (if-primo expr env val)
+(define (if-evalo expr env val)
   (fresh (e1 e2 e3 t)
     (== `(if ,e1 ,e2 ,e3) expr)
     (eval-expo e1 env t)
@@ -215,7 +213,7 @@
       ((=/= #f t) (eval-expo e2 env val))
       ((== #f t) (eval-expo e3 env val)))))
 
-(define handle-matcho
+(define match-evalo
   (lambda  (expr env val)
     (fresh (against-expr mval clause clauses)
       (== `(match ,against-expr ,clause . ,clauses) expr)
