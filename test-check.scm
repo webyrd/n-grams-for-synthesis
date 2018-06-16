@@ -1,3 +1,5 @@
+(load "pmatch.scm")
+
 (define-syntax test
   (syntax-rules ()
     ((_ title tested-expression expected-result)
@@ -29,8 +31,22 @@
     (cond
       ((null? tests) acc)
       (else (let ((res ((car tests) timeout)))
-              (printf "~s\n" res)
+              (print-test-result res)
               (test-runner-aux (cdr tests) (cons res acc) timeout))))))
+
+(define print-test-result
+  (lambda (res)
+    (pmatch res
+      [(,status ,title ,tested-expression ,expected ,produced ,stats)
+       (when (not (eqv? 'success status))
+         (display "!! "))       
+       (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])))
+
+(define time->inexact-seconds
+  (lambda (time)
+    (let ((s (time-second time))
+          (ns (time-nanosecond time)))
+      (exact->inexact (+ s (/ ns (expt 10 9)))))))
 
 #|
 (define-syntax test
