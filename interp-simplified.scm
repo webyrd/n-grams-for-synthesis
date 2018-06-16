@@ -34,7 +34,7 @@
     
     ((cdr-evalo expr env val))
     
-    ((null-evalo expr env val))
+    ((null?-evalo expr env val))
 
     ((cons-evalo expr env val))
 
@@ -99,7 +99,7 @@
 (define (car-evalo expr env val)
   (fresh (e d)
     (== `(car ,e) expr)
-    (=/= 'closure a)
+    (=/= 'closure val)
     (eval-expo e env `(,val . ,d))))
 
 (define (cdr-evalo expr env val)
@@ -108,7 +108,7 @@
     (=/= 'closure a)
     (eval-expo e env `(,a . ,val))))
 
-(define (null-evalo expr env val)
+(define (null?-evalo expr env val)
   (fresh (e v)
     (== `(null? ,e) expr)
     (conde
@@ -144,6 +144,11 @@
   (fresh (e*)
     (== `(and . ,e*) expr)
     (ando e* env val)))
+
+(define (or-evalo expr env val)
+  (fresh (e*)
+    (== `(or . ,e*) expr)
+    (oro e* env val)))
 
 (define (list-evalo expr env val)
   (fresh (rands a*)
