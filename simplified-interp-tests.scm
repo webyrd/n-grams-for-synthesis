@@ -1,11 +1,11 @@
-(load "mk-vicare.scm")
-(load "mk.scm")
-(load "test-check.scm")
-(load "interp-simplified.scm")
+;(load "mk-vicare.scm")
+;(load "mk.scm")
+;(load "test-check.scm")
+;(load "interp-simplified.scm")
 
 (test-runner
- ;; timeout in ticks
- 500000000
+ ;; timeout in seconds
+ 15
 
 ;; append tests
 

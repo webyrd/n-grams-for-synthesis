@@ -3,24 +3,36 @@
 (define-syntax test
   (syntax-rules ()
     ((_ title tested-expression expected-result)
-     (lambda (time-out-in-ticks)
+     (lambda (time-out-in-seconds)
        (let ((expected expected-result))
-         (let ((begin-stats (statistics)))
-           (let ((e (make-engine (lambda ()
-                                   (let ((produced tested-expression))
-                                     (let ((end-stats (statistics)))
-                                       (let ((stats-diff (sstats-difference end-stats begin-stats)))
-                                         (let ((success-indicator (if (equal? expected produced)
-                                                                      'success
-                                                                      'failure)))
-                                           (list success-indicator title 'tested-expression expected produced stats-diff)))))))))
-             (e time-out-in-ticks
-                (lambda (_ value)
-                  value)
-                (lambda (_)
-                  (let ((end-stats (statistics)))
-                    (let ((stats-diff (sstats-difference end-stats begin-stats)))
-                      (list 'timeout title 'tested-expression expected 'timeout stats-diff))))))))))))
+         (run-for-max-time time-out-in-seconds
+                           (lambda () tested-expression)
+                           (lambda (produced stats-diff)
+                             (let ((success-indicator (if (equal? expected produced)
+                                                          'success
+                                                          'failure)))
+                               (list success-indicator title 'tested-expression expected produced stats-diff)))
+                           (lambda (stats-diff)
+                             (list 'timeout title 'tested-expression expected 'timeout stats-diff))))))))
+
+(define run-for-max-time
+  (lambda (max-time expr-th success-f timeout-f)
+    (let ((begin-stats (statistics)))
+      (let ((e (make-engine (lambda ()
+                              (let ((produced (expr-th)))
+                                (let ((end-stats (statistics)))
+                                  (let ((stats-diff (sstats-difference end-stats begin-stats)))
+                                    (success-f produced stats-diff))))))))
+        (let loop ((e e))
+          (e (expt 10 7) ; ticks
+             (lambda (_ value)
+               value)
+             (lambda (e)
+               (let ((end-stats (statistics)))
+                 (let ((stats-diff (sstats-difference end-stats begin-stats)))
+                   (if (< (time->inexact-seconds (sstats-real stats-diff)) max-time)
+                     (loop e)
+                     (timeout-f stats-diff)))))))))))
 
 (define test-runner
   (lambda (timeout . test*)
@@ -52,16 +64,3 @@
     (let ((s (time-second time))
           (ns (time-nanosecond time)))
       (exact->inexact (+ s (/ ns (expt 10 9)))))))
-
-#|
-(define-syntax test
-  (syntax-rules ()
-    ((_ title tested-expression expected-result)
-     (begin
-       (printf "Testing ~s\n" title)
-       (let* ((expected expected-result)
-              (produced tested-expression))
-         (or (equal? expected produced)
-             (printf "Failed: ~a~%Expected: ~a~%Computed: ~a~%"
-                     'tested-expression expected produced)))))))
-|#
