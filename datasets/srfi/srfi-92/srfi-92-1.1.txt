@@ -1,0 +1,987 @@
+Title
+
+CHECK-LAMBDA and COND-LAMBDA
+
+Author
+
+Joo ChurlSoo
+
+Abstract
+
+This SRFI introduces CHECK-LAMBDA and CHECK-LAMBDA*, each of which creates a
+procedure that takes optional arguments and checks the states of actual
+arguments, and another two macros, COND-LAMBDA and COND-LAMBDA* that return
+different procedures according to the states of actual arguments as well as
+the number of them.
+
+Rationale
+
+The CHECK-LAMBDA reduces not only the clutter of various error conditionals by
+checking actual arguments but also somewhat lengthy code by combining optional
+argument handling methods such as LET-OPTIONALS and LET-KEYWORDS into a single
+syntax.  The optional parameters include not only positional fixed parameters
+but also non-fixed named parameters using simple symbols as keywords without
+introducing a new data type such as keyword object.  The COND-LAMBDA can
+reduce the clutter of procedures more precisely than CASE-LAMBDA of SRFI-16 by
+adding tests for the states of actual arguments to its formal argument list.
+The CHECK-LAMBDA* and COND-LAMBDA* are LET* equivalents corresponding to
+CHECK-LAMBDA and COND-LAMBDA.
+
+Specification
+
+The syntax is defined in the extended BNF of R5RS.
+(check-lambda  <formals> <body>)
+(check-lambda* <formals> <body>)
+
+<formals> -->
+| (<required variable spec>* <fixed spec>* <named spec>*)
+| (<required variable spec>* <fixed spec>* <named spec>* <option>)
+| <variable>
+| (<required variable spec>+ <fixed spec>* <named spec>* . <variable>)
+| (<required variable spec>+ <fixed spec>* <named spec>* <option> . <variable>)
+| (<fixed spec>+ <named spec>* . <variable>)
+| (<fixed spec>+ <named spec>* <option>. <variable>)
+| (<named spec>+  . <variable>)
+| (<named spec>+ <option> . <variable>)
+<required variable spec> --> <variable>
+			   | (<variable> <test>+)
+<fixed spec> --> "opt" <fixed variable spec>+
+<named spec> --> "key" <named variable spec>+ <named option>*
+<fixed variable spec> --> <variable> | (<variable> <default value> <test>*)
+<named variable spec> --> <variable> | (<variable> <default value> <test>*)
+			| ((<variable> <keyword name>))
+			| ((<variable> <keyword name>) <default value> <test>*)
+<option> --> "cat"
+<named option> --> #f | #t | <named option modifier>*
+<named option modifier> --> "allow-other-keys"  | "allow-non-keys"
+			  | "allow-duplicate-keys"
+<default value> --> <expression>
+<test> --> <expression>
+<keyword name> --> <identifier>
+
+Required variables correspond to identifiers that appear before any string
+marker in <formals>.  They determine the minimum arity of the resulting
+procedure.  Each required argument can take the form of a parenthesized
+variable and <test>s.  The <test>s are used to check the state of actual
+argument.  The required variables are bound to successive actual arguments
+starting with the first actual argument.  An error is signaled if there are
+fewer actual arguments than required variables.  When there are <test>s, an
+error is signaled if any of them returns a false value.
+
+The fixed optional variables follow an "opt" marker in <formals>.  They are
+bound to the remaining actual arguments sequentially from left to right.  Each
+optional argument can take the form of a parenthesized variable, <default
+value>, and <test>s.  The <default value> is used if a value is not given at
+the call site.  The <default value> and <test>s can be omitted with the
+parentheses, in which case #f is the default.  When there are <test>s, they
+are evaluated only when the variable is bound to an actual argument.  If any
+of them returns a false value, an error is signaled.
+
+The named optional variables follow a "key" marker in <formals>.  Like fixed
+optional arguments, each named optional argument is specified as a
+parenthesized variable name, <default value>, and <test>s.  The <default
+value> and <test>s can be omitted with the parentheses, in which case #f is
+the default value.  The keyword used at a call site for the corresponding
+variable has the same name as the variable.  Another form of named optional
+variables is specified as a double parenthesized variable name and a keyword,
+to allow the name of the locally bound variable to differ from the keyword
+used at call sites.  When calling a function with named optional arguments,
+the required argument (and all optional arguments, if specified) must be
+followed by an even number of arguments.  They are sequentially interpreted as
+a series of pairs, where the first member of each pair is a keyword specifying
+the variable name, and the second is the corresponding value.  If there is no
+actual argument for a particular keyword, the variable is bound to the result
+of evaluating <default value>.  When there are <test>s, they are evaluated
+only when the variable is bound to an actual argument.  If any of them returns
+a false value, an error is signaled.
+
+The following named-option/named-option-modifiers can be used to control
+binding behaviour and error reporting when there are named optional variables.
+named option modifier:
+ 1. allow-duplicate-keys -- the keyword-value list at the call site can
+    include duplicate values associated with same keyword, the first one is
+    used.
+ 2. allow-other-keys -- the keyword-value sequence at the call site can
+    include keywords that are not listed in the keyword part of <formals>.
+ 3. allow-non-keys -- the keyword-value sequence at the call site can include
+    non-symbols.  All remaining variables including the variable at the site
+    are bound to the corresponding <default value>s.
+#f -- all of the above are forbidden (default).  An error is signaled in each
+      case.
+#t -- all of the above are allowed.  And the keyword-value sequence at the
+      call site can include a single keyword at the end of an argument list.
+
+When there is a "cat" option, the binding process is the same as above if
+there are no <test>s.  When there are <test>s, the process is changed: A
+variable is temporarily bound to each of actual arguments (selected by keyword
+in case of named optional arguments) sequentially from left to right, until
+all <test>s return true values, then the variable is finally bound to the
+passed argument. If a variable is not bound to any of actual arguments, an
+error is signaled in case of requried variables. In case of optional
+variables, they are bound to the corresponding <default value>s instead of
+signaling an error.
+      
+If dotted rest variable is given, it is bound to the remaining actual
+arguments.  When there are no named optional variables, an error is signaled
+if dotted rest variable is not given in spite of the remaining actual
+arguments.  But when there are named optional variables, even though dotted
+rest variable is not given, an error is not signaled if any option except #f
+is given.
+
+(cond-lambda  <clause>+)
+(cond-lambda* <clause>+)
+
+<clause> --> (<formals> <body>)
+<formals> --> (<variable spec>*)
+	    | <variable>
+	    | (<variable spec>+ . <variable>)
+<variable spec> --> <variable>
+		  | (<variable> <test>+)
+<test> --> <expression>
+			
+COND-LAMBDA is an extended form of CASE-LAMBDA of SRFI-16.  Like CASE-LAMBDA,
+it returns a procedure of the first <clause>, the <formals> of which is
+matched with the number of actual arguments.  But if there are <test>s and any
+of them returns a false value, the subsequent <clause> is processed in spite
+of the match.  If no <clause> matches, an error is signaled.  Each <test> of
+COND-LAMBDA* sees the values of the previous <variable>s of <formals> like
+LET*.
+
+Examples
+
+(define check
+  (check-lambda* (a
+		  (b (number? b))
+		  (c (number? c) (< b c))
+		  (d (number? d))
+		  "opt" (e #\e (char? e)) (f (+ b c) (number? f))
+		  . g)
+	(list a b c d e f g)))
+(check #\a 1 2 3)		=> (#\a 1 2 3 #\e 3 ())
+(check #\a 2 1 3)		=> error
+(check #\a 1 2 3 #\b)		=> (#\a 1 2 3 #\b 3 ())
+(check #\a 1 2 3 4)		=> error
+(check #\a 1 2 3 #\b 4 5)	=> (#\a 1 2 3 #\b 4 (5))
+
+(define float
+  (check-lambda* (a
+		  (b (number? b))
+		  (c (number? c) (< b c))
+		  (d (number? d))
+		  "opt" (e #\e (char? e)) (f (+ b c) (number? f))
+		  "cat"
+		  . g)
+	(list a b c d e f g)))
+(float #\a 1 2 3)		=> (#\a 1 2 3 #\e 3 ())
+(float #\a 2 1 3)		=> (#\a 2 3 1 #\e 5 ())
+(float #\a 1 2 3 #\b)		=> (#\a 1 2 3 #\b 3 ())
+(float #\a 1 2 3 4)		=> (#\a 1 2 3 #\e 4 ())
+(float #\a 1 2 3 #\b 4 5)	=> (#\a 1 2 3 #\b 4 (5))
+
+(alet* ((() (define a '(1 2 3 a 30 y 20 x 10)))
+	(opt a (a 10) (b 20) (c 30) . d)
+	(key d (x 1) (y 2) (a 3)))
+  (list a b c x y))			=> (30 2 3 10 20)
+
+((check-lambda* ("opt" (a 10) (b 20) (c 30)
+		 "key" (x 1) (y 2) (a 3))
+   (list a b c x y))
+ 1 2 3 'a 30 'y 20 'x 10)		=> (30 2 3 10 20)
+
+((check-lambda (a
+		(b (number? b) (< 0 b))
+		"opt" (c 10)
+		"key" ((d dd) 30 (number? d)) e (f 40)
+		. g)
+	(list a b c d e f g))
+ 0 1 2 'dd 3 'd 4 'dd 5 'f 6)		=> unknown keysymbol d
+
+((check-lambda (a
+		(b (number? b) (< 0 b))
+		"opt" (c 10)
+		"key" ((d dd) 30 (number? d)) e (f 40)
+		"allow-other-keys"
+		. g)
+	(list a b c d e f g))
+ 0 1 2 'dd 3 'd 4 'dd 5 'f 6)		=> duplicate keysymbol dd
+
+((check-lambda (a
+		(b (number? b) (< 0 b))
+		"opt" (c 10)
+		"key" ((d dd) 30 (number? d)) e (f 40)
+		"allow-other-keys"
+		"allow-duplicate-keys"
+		. g)
+	(list a b c d e f g))
+ 0 1 2 'dd 3 'd 4 'dd 5 'f 6)		=> (0 1 2 3 #f 6 (d 4 dd 5))
+
+((check-lambda (a
+		(b (number? b) (< 0 b))
+		"opt" (c 10)
+		"key" ((d dd) 30 (number? d)) e (f 40)
+		#t
+		. g)
+	(list a b c d e f g))
+ 0 1 2 'dd 3 'd 4 'dd 5 'f 6)		=> (0 1 2 3 #f 6 (d 4 dd 5))
+
+(define cond-test
+  (cond-lambda*
+   ((a) a)
+   (((a (number? a)) (b (number? b) (< a b)))
+    (+ a b))
+   (((a (number? a)) (b (number? b)))
+    (- a b))
+   (((a (string? a)) (b (string? b) (< (string-length a) (string-length b))))
+    (string-append a b))
+   (((a (string? a)) (b (string? b)))
+    (string-append b a))
+   ((a b) (vector a b))
+   ((a b . c) (apply list a b c))))
+(cond-test 1 2)	     => 3
+(cond-test 2 1)	     => 1
+(cond-test "a" "bc") => "abc"
+(cond-test "ab" "c") => "cab"
+(cond-test "a" 1)    => #2("a" 1)
+(cond-test "a" 1 2)  => ("a" 1 2)
+
+Implementation
+
+The following implementation is written in R5RS hygienic macros and requires
+SRFI-23 (Error reporting mechanism).
+
+(define-syntax check-lambda
+  (syntax-rules ()
+    ((check-lambda (a . e) bd ...)
+     (check-lambda "chk" () () () () () () (a . e) bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k kn ...) (#t . e) bd ...)
+     (check-lambda "key" (allow-anything) (#t) (tt ...) (nt ...)
+		   (v ...) (k kn ...) e bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k kn ...) (#f . e) bd ...)
+     (check-lambda "key" () (#f) (tt ...) (nt ...)
+		   (v ...) (k kn ...) e bd ...))
+    ((check-lambda "chk" () () (tt ...) (nt ...) () () ("opt" . e) bd ...)
+     (check-lambda "opt" () () (tt ...) (nt ...) () () e bd ...))
+    ((check-lambda "chk" () () (tt ...) (nt ...) () () ("key" . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...) () () e bd ...))
+    ((check-lambda "opt" () () (tt ...) (nt ...)
+		   (v vv ...) () ("key" . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...) (v vv ...) () e bd ...))
+    ((check-lambda "key" (o ...) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) ("allow-other-keys" . e) bd ...)
+     (check-lambda "key" (o ... allow-other-keys) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) e bd ...))
+    ((check-lambda "key" (o ...) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) ("allow-duplicate-keys" . e) bd ...)
+     (check-lambda "key" (o ... allow-duplicate-keys) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) e bd ...))
+    ((check-lambda "key" (o ...) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) ("allow-non-keys" . e) bd ...)
+     (check-lambda "key" (o ... allow-non-keys) () (tt ...) (nt ...)
+		   (v ...) (k kn ...) e bd ...))
+    ((check-lambda chk (o ...) (f ...) (tt ...) (nt ...)
+		   (v ...) (k ...) ("cat" . e) bd ...)
+     (check-lambda "cat" (o ...) (f ...) (tt ...) (nt ...)
+		   (v ...) (k ...) e bd ...))
+
+    ((check-lambda "chk" () () (tt ...) (nt ...) () () ((n t ...) . e) bd ...)
+     (check-lambda "chk" () () (tt ... tn) (nt ... (n t ...)) () () e bd ...))
+    ((check-lambda "chk" () () (tt ...) (nt ...) () () (n . e) bd ...)
+     (check-lambda "chk" () () (tt ... tn) (nt ... (n)) () () e bd ...))
+    ((check-lambda "opt" () () (tt ...) (nt ...)
+		   (v ...) () ((n d t ...) . e) bd ...)
+     (check-lambda "opt" () () (tt ...) (nt ...)
+		   (v ... (n d t ...)) () e bd ...))
+    ((check-lambda "opt" () () (tt ...) (nt ...) (v ...) () (n . e) bd ...)
+     (check-lambda "opt" () () (tt ...) (nt ...) (v ... (n #f)) () e bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ...) (((n key) d t ...) . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ... ((n key) d t ...)) e bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ...) (((n key)) . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ... ((n key) #f)) e bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ...) ((n d t ...) . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ... ((n n) d t ...)) e bd ...))
+    ((check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ...) (n . e) bd ...)
+     (check-lambda "key" () () (tt ...) (nt ...)
+		   (v ...) (k ... ((n n) #f)) e bd ...))
+
+    ((check-lambda "cat" (o ...) (f ...) () ()
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda z
+       (float-opt z (o ...) (f ...) ()
+		  (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))
+    ((check-lambda chk (o ...) (f ...) () ()
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda z
+       (check-opt z (o ...) (f ...) ()
+		  (v ...) (((nk kk) dk tk ...) ... ) e (kk ...) bd ...)))
+    ((check-lambda chk () () (tt ...) ((n) ...) () () e bd ...)
+     (lambda (n ... . e) bd ...))
+    ((check-lambda "cat" (o ...) (f ...) (tt ...) ((n) ...)
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (float-opt te (o ...) (f ...) ((n tt) ...)
+		  (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))
+    ((check-lambda chk (o ...) (f ...) (tt ...) ((n) ...)
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (check-opt te (o ...) (f ...) ((n tt) ...)
+		  (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))
+    ((check-lambda "cat" () () (tt ...) ((n t ...) ...) () () () bd ...)
+     (lambda (tt ...)
+       (let ((z (list tt ...)))
+	 ;; not for random order evaluation
+	 ;; but for sequential evaluation from right to left
+	 ;;(slet ((n (wow-float! z n t ...)) ...) bd ...))))
+	 (let ((n (wow-float! z n t ...)) ...) bd ...))))
+    ((check-lambda chk  () () (tt ...) ((n t ...) ...) () () () bd ...)
+     (lambda (tt ...)
+       (let ((n (wow-check n tt t ...)) ...) bd ...)))
+    ((check-lambda "cat" () () (tt ...) ((n t ...) ...) () () e bd ...)
+     (lambda (tt ... . te)
+       (let ((z (list tt ...)))
+	 ;;(slet ((n (wow-float! z n t ...)) ... (e te)) bd ...))))
+	 (let ((n (wow-float! z n t ...)) ... (e te)) bd ...))))
+    ((check-lambda chk () () (tt ...) ((n t ...) ...) () () e bd ...)
+     (lambda (tt ... . te)
+       (let ((n (wow-check n tt t ...)) ... (e te)) bd ...)))
+    ((check-lambda "cat" (o ...) (f ...) (tt ...) ((n t ...) ...)
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let ((z (list tt ...)))
+	 ;;(slet ((tt (wow-float! z n t ...)) ...)
+	 (let ((tt (wow-float! z n t ...)) ...)
+	   (float-opt te (o ...) (f ...) ((n tt) ...)
+		      (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))))
+    ((check-lambda chk (o ...) (f ...) (tt ...) ((n t ...) ...)
+		   (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let ((tt (wow-check n tt t ...)) ...)
+	 (check-opt te (o ...) (f ...) ((n tt) ...)
+		    (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...))))
+    ((check-lambda e bd ...)
+     (lambda e bd ...))))
+
+(define-syntax check-lambda*
+  (syntax-rules ()
+    ((check-lambda* (a . e) bd ...)
+     (check-lambda* "chk" () () () () () () (a . e) bd ...))
+    ((check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k kn ...) (#t . e) bd ...)
+     (check-lambda* "key" (allow-anything) (#t) (tt ...) (nt ...)
+		    (v ...) (k kn ...) e bd ...))
+    ((check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k kn ...) (#f . e) bd ...)
+     (check-lambda* "key" () (#f) (tt ...) (nt ...)
+		    (v ...) (k kn ...) e bd ...))
+    ((check-lambda* "chk" () () (tt ...) (nt ...) () () ("opt" . e) bd ...)
+     (check-lambda* "opt" () () (tt ...) (nt ...) () () e bd ...))
+    ((check-lambda* "chk" () () (tt ...) (nt ...) () () ("key" . e) bd ...)
+     (check-lambda* "key" () () (tt ...) (nt ...) () () e bd ...))
+    ((check-lambda* "opt" () () (tt ...) (nt ...)
+		    (v vv ...) () ("key" . e) bd ...)
+     (check-lambda* "key" () () (tt ...) (nt ...) (v vv ...) () e bd ...))
+    ((check-lambda* "key" (o ...) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) ("allow-other-keys" . e) bd ...)
+     (check-lambda* "key" (o ... allow-other-keys) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) e bd ...))
+    ((check-lambda* "key" (o ...) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) ("allow-duplicate-keys" . e) bd ...)
+     (check-lambda* "key" (o ... allow-duplicate-keys) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) e bd ...))
+    ((check-lambda* "key" (o ...) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) ("allow-non-keys" . e) bd ...)
+     (check-lambda* "key" (o ... allow-non-keys) () (tt ...) (nt ...)
+		    (v ...) (k kn ...) e bd ...))
+    ((check-lambda* chk (o ...) (f ...) (tt ...) (nt ...)
+		   (v ...) (k ...) ("cat" . e) bd ...)
+     (check-lambda* "cat" (o ...) (f ...) (tt ...) (nt ...)
+		   (v ...) (k ...) e bd ...))
+
+    ((check-lambda* "chk" () () (tt ...) (nt ...) () () ((n t ...) . e) bd ...)
+     (check-lambda* "chk" () () (tt ... tn) (nt ... (n t ...)) () () e bd ...))
+    ((check-lambda* "chk" () () (tt ...) (nt ...) () () (n . e) bd ...)
+     (check-lambda* "chk" () () (tt ... tn) (nt ... (n)) () () e bd ...))
+    ((check-lambda* "opt" () () (tt ...) (nt ...)
+		    (v ...) () ((n d t ...) . e) bd ...)
+     (check-lambda* "opt" () () (tt ...) (nt ...)
+		    (v ... (n d t ...)) () e bd ...))
+    ((check-lambda* "opt" () () (tt ...) (nt ...) (v ...) () (n . e) bd ...)
+     (check-lambda* "opt" () () (tt ...) (nt ...) (v ... (n #f)) () e bd ...))
+    ((check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ...) (((n key) d t ...) . e) bd ...)
+     (check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ... ((n key) d t ...)) e bd ...))
+    ((check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ...) ((n d t ...) . e) bd ...)
+     (check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ... ((n n) d t ...)) e bd ...))
+    ((check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ...) (n . e) bd ...)
+     (check-lambda* "key" () () (tt ...) (nt ...)
+		    (v ...) (k ... ((n n) #f)) e bd ...))
+
+    ((check-lambda* "cat" (o ...) (f ...) () ()
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda z
+       (float-opt* z (o ...) (f ...)
+		   (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))
+    ((check-lambda* chk (o ...) (f ...) () ()
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda z
+       (check-opt* z (o ...) (f ...)
+		   (v ...) (((nk kk) dk tk ...) ... ) e (kk ...) bd ...)))
+    ((check-lambda* chk () () (tt ...) ((n) ...) () () () bd ...)
+     (lambda (tt ...) (let* ((n tt) ...) bd ...)))
+    ((check-lambda* chk () () (tt ...) ((n) ...) () () e bd ...)
+     (lambda (tt ... . te) (let* ((n tt) ... (e te)) bd ...)))
+    ((check-lambda* "cat" (o ...) (f ...) (tt ...) ((n) ...)
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let* ((n tt) ...)
+	 (float-opt* te (o ...) (f ...)
+		     (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...))))
+    ((check-lambda* chk (o ...) (f ...) (tt ...) ((n) ...)
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let* ((n tt) ...)
+	 (check-opt* te (o ...) (f ...)
+		     (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...))))
+    ((check-lambda* "cat" () () (tt ...) ((n t ...) ...) () () () bd ...)
+     (lambda (tt ...)
+       (let ((z (list tt ...)))
+	 (let* ((n (wow-float! z n t ...)) ...) bd ...))))
+    ((check-lambda* chk  () () (tt ...) ((n t ...) ...) () () () bd ...)
+     (lambda (tt ...)
+       (let* ((n (wow-check n tt t ...)) ...) bd ...)))
+    ((check-lambda* "cat" () () (tt ...) ((n t ...) ...) () () e bd ...)
+     (lambda (tt ... . te)
+       (let ((z (list tt ...)))
+	 (let* ((n (wow-float! z n t ...)) ... (e te)) bd ...))))
+    ((check-lambda* chk () () (tt ...) ((n t ...) ...) () () e bd ...)
+     (lambda (tt ... . te)
+       (let* ((n (wow-check n tt t ...)) ... (e te)) bd ...)))
+    ((check-lambda* "cat" (o ...) (f ...) (tt ...) ((n t ...) ...)
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let ((z (list tt ...)))
+	 (let* ((n (wow-float! z n t ...)) ...)
+	   (float-opt* te (o ...) (f ...)
+		       (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...)))))
+    ((check-lambda* chk (o ...) (f ...) (tt ...) ((n t ...) ...)
+		    (v ...) (((nk kk) dk tk ...) ...) e bd ...)
+     (lambda (tt ... . te)
+       (let* ((n (wow-check n tt t ...)) ...)
+	 (check-opt* te (o ...) (f ...)
+		     (v ...) (((nk kk) dk tk ...) ...) e (kk ...) bd ...))))
+    ((check-lambda* e bd ...)
+     (lambda e bd ...))))
+
+(define-syntax cond-lambda
+  (syntax-rules ()
+    ((cond-lambda (formals bd ...) cl ...)
+     (lambda z (let ((len (length z)))
+		 (cond-lambda "*" z len (formals bd ...) cl ...))))
+    ((cond-lambda "*" z len (() bd ...) cl ...)
+     (if (= len 0)
+         ((lambda () bd ...))
+         (cond-lambda "*" z len cl ...)))
+    ((cond-lambda "*" z len (((n t ...) . e) bd ...) cl ...)
+     (cond-lambda " " z len (tt) ((n t ...)) (e bd ...) cl ...))
+    ((cond-lambda "*" z len ((n . e) bd ...) cl ...)
+     (cond-lambda " " z len (tt) ((n)) (e bd ...) cl ...))
+    ((cond-lambda "*" z len (e bd ...) cl ...)
+     (let ((e z)) bd ...))
+    ((cond-lambda "*" z len)
+     (error "the arguments are not matched to any clause of cond-lambda" z))
+    ((cond-lambda " " z len (tt ...) (nt ...) (((n t ...) . e) bd ...) cl ...)
+     (cond-lambda " " z len (tt ... tn) (nt ... (n t ...)) (e bd ...) cl ...))
+    ((cond-lambda " " z len (tt ...) (nt ...) ((n . e) bd ...) cl ...)
+     (cond-lambda " " z len (tt ... tn) (nt ... (n)) (e bd ...) cl ...))
+    ((cond-lambda " " z len (tt ...) ((n) ...) (() bd ...) cl ...)
+     (if (= len (length '(tt ...)))
+         (apply (lambda (n ...) bd ...) z)
+         (cond-lambda "*" z len cl ...)))
+    ((cond-lambda " " z len (tt ...) ((n t ...) ...) (() bd ...) cl ...)
+     (if (and (= len (length '(tt ...)))
+	      (apply (lambda (tt ...) (and (let ((n tt)) (and t ...)) ...)) z))
+	 (apply (lambda (n ...) bd ...) z)
+         (cond-lambda "*" z len cl ...)))
+    ((cond-lambda " " z len (tt ...) ((n) ...) (e bd ...) cl ...)
+     (if (>= len (length '(tt ...)))
+         (apply (lambda (n ... . e) bd ...) z)
+         (cond-lambda "*" z len cl ...)))
+    ((cond-lambda " " z len (tt ...) ((n t ...) ...) (e bd ...) cl ...)
+     (if (and (>= len (length '(tt ...)))
+	      (apply (lambda (tt ...) (and (let ((n tt)) (and t ...)) ...)) z))
+         (apply (lambda (n ... . e) bd ...) z)
+         (cond-lambda "*" z len cl ...)))))
+
+(define-syntax cond-lambda*
+  (syntax-rules ()
+    ((cond-lambda* (formals bd ...) cl ...)
+     (lambda z (let ((len (length z)))
+		 (cond-lambda* "*" z len (formals bd ...) cl ...))))
+    ((cond-lambda* "*" z len (() bd ...) cl ...)
+     (if (= len 0)
+         ((lambda () bd ...))
+         (cond-lambda* "*" z len cl ...)))
+    ((cond-lambda* "*" z len (((n t ...) . e) bd ...) cl ...)
+     (cond-lambda* " " z len (tt) ((n t ...)) (e bd ...) cl ...))
+    ((cond-lambda* "*" z len ((n . e) bd ...) cl ...)
+     (cond-lambda* " " z len (tt) ((n)) (e bd ...) cl ...))
+    ((cond-lambda* "*" z len (e bd ...) cl ...)
+     (let ((e z)) bd ...))
+    ((cond-lambda* "*" z len)
+     (error "the arguments are not matched to any clause of cond-lambda*" z))
+    ((cond-lambda* " " z len (tt ...) (nt ...) (((n t ...) . e) bd ...) cl ...)
+     (cond-lambda* " " z len (tt ... tn) (nt ... (n t ...)) (e bd ...) cl ...))
+    ((cond-lambda* " " z len (tt ...) (nt ...) ((n . e) bd ...) cl ...)
+     (cond-lambda* " " z len (tt ... tn) (nt ... (n)) (e bd ...) cl ...))
+    ((cond-lambda* " " z len (tt ...) ((n) ...) (() bd ...) cl ...)
+     (if (= len (length '(tt ...)))
+	 (apply (lambda (tt ...) (let* ((n tt) ...) bd ...)) z)
+         (cond-lambda* "*" z len cl ...)))
+    ((cond-lambda* " " z len (tt ...) ((n t ...) ...) (() bd ...) cl ...)
+     (if (and (= len (length '(tt ...)))
+	      (apply (lambda (tt ...) (cond-and* ((n tt t ...) ...))) z))
+	 (apply (lambda (tt ...) (let* ((n tt) ...) bd ...)) z)
+         (cond-lambda* "*" z len cl ...)))
+    ((cond-lambda* " " z len (tt ...) ((n) ...) (e bd ...) cl ...)
+     (if (>= len (length '(tt ...)))
+	 (apply (lambda (tt ... . te) (let* ((n tt) ... (e te)) bd ...)) z)
+         (cond-lambda* "*" z len cl ...)))
+    ((cond-lambda* " " z len (tt ...) ((n t ...) ...) (e bd ...) cl ...)
+     (if (and (>= len (length '(tt ...)))
+	      (apply (lambda (tt ...) (cond-and* ((n tt t ...) ...))) z))
+	 (apply (lambda (tt ... . te) (let* ((n tt) ... (e te)) bd ...)) z)
+         (cond-lambda* "*" z len cl ...)))))
+
+(define-syntax check-opt
+  (syntax-rules ()
+    ((check-opt z (o ...) (f ...) (nd ...) ((n d t ...) (nn dn tn ...) ...)
+		(nkdt ...) e (kk ...) bd ...)
+     (let ((y (if (null? z) z (cdr z)))
+	   (x (if (null? z)
+		  d
+		  (wow-check n (car z) t ...))))
+       (check-opt y (o ...) (f ...) (nd ... (n x)) ((nn dn tn ...) ...)
+		  (nkdt ...) e (kk ...) bd ...)))
+    ((check-opt z (o ...) (#t) (nd ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((x (if (null? z)
+		  d
+		  (wow-key! z (o ...) () () (n k) d t ...))))
+       (check-opt z (o ...) (#t) (nd ... (n x)) ()
+		  (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((check-opt z (o ...) (f ...) (nd ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((x (if (null? z)
+		  d
+		  (wow-key! z (o ...) (kk ...) (k kn ...) (n k) d t ...))))
+       (check-opt z (o ...) (f ...) (nd ... (n x)) ()
+		  (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((check-opt z () (f ...) (nd ...) () () () (kk ...) bd ...)
+     (if (null? z)
+	 (let (nd ...) bd ...)
+	 (error "check-lambda: too many arguments" z)))
+    ((check-opt z (o oo ...) (f ...) (nd ...) () () () (kk ...) bd ...)
+     (let (nd ...) bd ...))
+    ((check-opt z (o ...) (f ...) (nd ...) () () e (kk ...) bd ...)
+     (let (nd ... (e z)) bd ...))))
+
+(define-syntax check-opt*
+  (syntax-rules ()
+    ((check-opt* z (o ...) (f ...) ((n d t ...) (nn dn tn ...) ...)
+		 (nkdt ...) e (kk ...) bd ...)
+     (let ((y (if (null? z) z (cdr z)))
+	   (n (if (null? z)
+		  d
+		  (wow-check n (car z) t ...))))
+       (check-opt* y (o ...) (f ...) ((nn dn tn ...) ...)
+		   (nkdt ...) e (kk ...) bd ...)))
+    ((check-opt* z (o ...) (#t) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (wow-key! z (o ...) () () (n k) d t ...))))
+       (check-opt* z (o ...) (#t) ()
+		   (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((check-opt* z (o ...) (f ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (wow-key! z (o ...) (kk ...) (k kn ...) (n k) d t ...))))
+       (check-opt* z (o ...) (f ...) ()
+		   (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((check-opt* z () (f ...) () () () (kk ...) bd ...)
+     (if (null? z)
+	 (let () bd ...)
+	 (error "check-lambda*: too many arguments" z)))
+    ((check-opt* z (o oo ...) (f ...) () () () (kk ...) bd ...)
+     (let () bd ...))
+    ((check-opt* z (o ...) (f ...) () () e (kk ...) bd ...)
+     (let ((e z)) bd ...))))
+
+(define-syntax float-opt
+  (syntax-rules ()
+    ((float-opt z (o ...) (f ...) (nd ...) ((n d t ...) (nn dn tn ...) ...)
+		(nkdt ...) e (kk ...) bd ...)
+     (let ((x (if (null? z)
+		  d
+		  (wow-cat! z n d t ...))))
+       (float-opt z (o ...) (f ...) (nd ... (n x)) ((nn dn tn ...) ...)
+		  (nkdt ...) e (kk ...) bd ...)))
+    ((float-opt z (o ...) (#t) (nd ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((x (if (null? z)
+		  d
+		  (mom-key! z (o ...) () () (n k) d t ...))))
+       (float-opt z (o ...) (#t) (nd ... (n x)) ()
+		  (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((float-opt z (o ...) (f ...) (nd ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((x (if (null? z)
+		  d
+		  (mom-key! z (o ...) (kk ...) (k kn ...) (n k) d t ...))))
+       (float-opt z (o ...) (f ...) (nd ... (n x)) ()
+		  (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((float-opt z () (f ...) (nd ...) () () () (kk ...) bd ...)
+     (if (null? z)
+	 (let (nd ...) bd ...)
+	 (error "check-lambda: too many arguments" z)))
+    ((float-opt z (o oo ...) (f ...) (nd ...) () () () (kk ...) bd ...)
+     (let (nd ...) bd ...))
+    ((float-opt z (o ...) (f ...) (nd ...) () () e (kk ...) bd ...)
+     (let (nd ... (e z)) bd ...))))
+
+(define-syntax float-opt*
+  (syntax-rules ()
+    ((float-opt* z (o ...) (f ...) ((n d t ...) (nn dn tn ...) ...)
+		 (nkdt ...) e (kk ...) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (wow-cat! z n d t ...))))
+       (float-opt* z (o ...) (f ...) ((nn dn tn ...) ...)
+		   (nkdt ...) e (kk ...) bd ...)))
+    ((float-opt* z (o ...) (#t) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (mom-key! z (o ...) () () (n k) d t ...))))
+       (float-opt* z (o ...) (#t) ()
+		   (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((float-opt* z (o ...) (f ...) ()
+		(((n k) d t ...) ((nn kn) dn dt ...) ...) e (kk ...) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (mom-key! z (o ...) (kk ...) (k kn ...) (n k) d t ...))))
+       (float-opt* z (o ...) (f ...) ()
+		   (((nn kn) dn dt ...) ...) e (kk ...) bd ...)))
+    ((float-opt* z () (f ...) () () () (kk ...) bd ...)
+     (if (null? z)
+	 (let () bd ...)
+	 (error "check-lambda*: too many arguments" z)))
+    ((float-opt* z (o oo ...) (f ...) () () () (kk ...) bd ...)
+     (let () bd ...))
+    ((float-opt* z (o ...) (f ...) () () e (kk ...) bd ...)
+     (let ((e z)) bd ...))))
+
+(define-syntax cond-and*
+  (syntax-rules ()
+    ((cond-and* ((n v t ...)))
+     (let ((n v))
+       (and t ...)))
+    ((cond-and* ((n v t ...) nvt ...))
+     (let ((n v))
+       (and t ... (cond-and* (nvt ...)))))))
+
+;; (define-syntax slet
+;;   (syntax-rules ()
+;;     ((slet ((n v) ...) bd ...)
+;;      (slet "sequential" () ((n v) ...) bd ...))
+;;     ((slet "sequential" (nt ...) ((n v) nv ...) bd ...)
+;;      ((lambda (t) (slet "sequential" (nt ... (n t)) (nv ...) bd ...)) v))
+;;     ((slet "sequential" ((n t) ...) () bd ...)
+;;      ((lambda (n ...) bd ...) t ...))))
+
+(define-syntax wow-check		; wow means with-or-without
+  (syntax-rules ()
+    ((wow-check n v) v)
+    ((wow-check n v t ...)
+     (let ((n v))
+       (if (and t ...)
+	   n
+	   (error "check-lambda[*]: bad argument" n 'n 't ...))))))
+
+(define-syntax wow-key!
+  (syntax-rules ()
+    ((wow-key! z (o ...) () () (n key) d)
+     (let ((x (car z))
+	   (y (cdr z)))
+       (if (null? y)
+	   d
+	   (if (eq? 'key x)
+	       (begin (set! z (cdr y)) (car y))
+	       (let lp ((head (list (car y) x)) (tail (cdr y)))
+		 (if (null? tail)
+		     d
+		     (let ((x (car tail))
+			   (y (cdr tail)))
+		       (if (null? y)
+			   d
+			   (if (eq? 'key x)
+			       (begin (set! z (append (reverse head) (cdr y)))
+				      (car y))
+			       (lp (cons (car y) (cons x head))
+				   (cdr y)))))))))))
+    ((wow-key! z (o ...) (kk ...) (k ...) (n key) d)
+     (let lp ((head '()) (tail z))
+       (if (null? tail)
+	   d
+	   (let ((x (car tail))
+		 (y (cdr tail)))
+	     (if (not (symbol? x))
+		 (if (memq 'allow-non-keys '(o ...))
+		     d
+		     (error "no keysymbol" x))
+		 (if (null? y)
+		     (error "odd keysymbol list" tail)
+		     (if (memq x '(k ...))
+			 (if (eq? 'key x)
+			     (begin (set! z (append (reverse head) (cdr y)))
+				    (car y))
+			     (lp (cons (car y) (cons x head)) (cdr y)))
+			 (if (memq x '(kk ...))
+			     (if (memq 'allow-duplicate-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "duplicate keysymbol" x))
+			     (if (memq 'allow-other-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "unknown keysymbol" x))))))))))
+    ((wow-key! z (o ...) () () (n key) d t ...)
+     (let ((x (car z))
+	   (y (cdr z)))
+       (if (null? y)
+	   d
+	   (if (eq? 'key x)
+	       (let ((n (car y)))
+		 (if (and t ...)
+		     (begin (set! z (cdr y)) n)
+		     (error "bad argument" n 'n 't ...)))
+	       (let lp ((head (list (car y) x)) (tail (cdr y)))
+		 (if (null? tail)
+		     d
+		     (let ((x (car tail))
+			   (y (cdr tail)))
+		       (if (null? y)
+			   d
+			   (if (eq? 'key x)
+			       (let ((n (car y)))
+				 (if (and t ...)
+				     (begin
+				       (set! z (append (reverse head) (cdr y)))
+				       n)
+				     (error "bad argument" n 'n 't ...)))
+			       (lp (cons (car y) (cons x head))
+				   (cdr y)))))))))))
+    ((wow-key! z (o ...) (kk ...) (k ...) (n key) d t ...)
+     (let lp ((head '()) (tail z))
+       (if (null? tail)
+	   d
+	   (let ((x (car tail))
+		 (y (cdr tail)))
+	     (if (not (symbol? x))
+		 (if (memq 'allow-non-keys '(o ...))
+		     d
+		     (error "no keysymbol" x))
+		 (if (null? y)
+		     (error "odd keysymbol list" tail)
+		     (if (memq x '(k ...))
+			 (if (eq? 'key x)
+			     (let ((n (car y)))
+			       (if (and t ...)
+				   (begin (set! z (append (reverse head)
+							  (cdr y)))
+					  n)
+				   (error "bad argument" n 'n 't ...)))
+			     (lp (cons (car y) (cons x head)) (cdr y)))
+			 (if (memq x '(kk ...))
+			     (if (memq 'allow-duplicate-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "duplicate keysymbol" x))
+			     (if (memq 'allow-other-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "unknown keysymbol" x))))))))))))
+
+(define-syntax wow-float!
+  (syntax-rules ()
+    ((wow-float! z n)
+     (let ((n (car z)))
+       (set! z (cdr z)) n))
+    ((wow-float! z n t ...)
+     (let ((n (car z)))
+       (if (and t ...)
+	   (begin (set! z (cdr z)) n)
+	   (let lp ((head (list n)) (tail (cdr z)))
+	     (if (null? tail)
+		 (error "check-lambda[*]: no more argument to check"
+			'n 't ... (reverse head))
+		 (let ((n (car tail)))
+		   (if (and t ...)
+		       (begin (set! z (append (reverse head) (cdr tail))) n)
+		       (lp (cons n head) (cdr tail)))))))))))
+
+(define-syntax wow-cat!
+  (syntax-rules ()
+    ((wow-cat! z n d)
+     (let ((n (car z)))
+       (set! z (cdr z)) n))
+    ((wow-cat! z n d t ...)
+     (let ((n (car z)))
+       (if (and t ...)
+	   (begin (set! z (cdr z)) n)
+	   (let lp ((head (list n)) (tail (cdr z)))
+	     (if (null? tail)
+		 d
+		 (let ((n (car tail)))
+		   (if (and t ...)
+		       (begin (set! z (append (reverse head) (cdr tail))) n)
+		       (lp (cons n head) (cdr tail)))))))))))
+
+(define-syntax mom-key!
+  (syntax-rules ()
+    ((mom-key! z (o ...) () () (n key) d)
+     (let ((x (car z))
+	   (y (cdr z)))
+       (if (null? y)
+	   d
+	   (if (eq? 'key x)
+	       (begin (set! z (cdr y)) (car y))
+	       (let lp ((head (list (car y) x)) (tail (cdr y)))
+		 (if (null? tail)
+		     d
+		     (let ((x (car tail))
+			   (y (cdr tail)))
+		       (if (null? y)
+			   d
+			   (if (eq? 'key x)
+			       (begin (set! z (append (reverse head) (cdr y)))
+				      (car y))
+			       (lp (cons (car y) (cons x head))
+				   (cdr y)))))))))))
+    ((mom-key! z (o ...) (kk ...) (k ...) (n key) d)
+     (let lp ((head '()) (tail z))
+       (if (null? tail)
+	   d
+	   (let ((x (car tail))
+		 (y (cdr tail)))
+	     (if (not (symbol? x))
+		 (if (memq 'allow-non-keys '(o ...))
+		     d
+		     (error "no keysymbol" x))
+		 (if (null? y)
+		     (error "odd keysymbol list" tail)
+		     (if (memq x '(k ...))
+			 (if (eq? 'key x)
+			     (begin (set! z (append (reverse head) (cdr y)))
+				    (car y))
+			     (lp (cons (car y) (cons x head)) (cdr y)))
+			 (if (memq x '(kk ...))
+			     (if (memq 'allow-duplicate-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "duplicate keysymbol" x))
+			     (if (memq 'allow-other-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "unknown keysymbol" x))))))))))
+    ((mom-key! z (o ...) () () (n key) d t ...)
+     (let ((x (car z))
+	   (y (cdr z)))
+       (if (null? y)
+	   d
+	   (if (and (eq? 'key x)
+		    (let ((n (car y))) (and t ...)))
+	       (begin (set! z (cdr y)) (car y))
+	       (let lp ((head (list (car y) x)) (tail (cdr y)))
+		 (if (null? tail)
+		     d
+		     (let ((x (car tail))
+			   (y (cdr tail)))
+		       (if (null? y)
+			   d
+			   (if (and (eq? 'key x)
+				    (let ((n (car y))) (and t ...)))
+			       (begin (set! z (append (reverse head) (cdr y)))
+				      (car y))
+			       (lp (cons (car y) (cons x head))
+				   (cdr y)))))))))))
+    ((mom-key! z (o ...) (kk ...) (k ...) (n key) d t ...)
+     (let lp ((head '()) (tail z))
+       (if (null? tail)
+	   d
+	   (let ((x (car tail))
+		 (y (cdr tail)))
+	     (if (not (symbol? x))
+		 (if (memq 'allow-non-keys '(o ...))
+		     d
+		     (error "no keysymbol" x))
+		 (if (null? y)
+		     (error "odd keysymbol list" tail)
+		     (if (memq x '(k ...))
+			 (if (and (eq? 'key x)
+				  (let ((n (car y))) (and t ...)))
+			     (begin (set! z (append (reverse head) (cdr y)))
+				    (car y))
+			     (lp (cons (car y) (cons x head)) (cdr y)))
+			 (if (memq x '(kk ...))
+			     (if (memq 'allow-duplicate-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "duplicate keysymbol" x))
+			     (if (memq 'allow-other-keys '(o ...))
+				 (lp (cons (car y) (cons x head)) (cdr y))
+				 (error "unknown keysymbol" x))))))))))))
+
+References
+
+[R5RS]	    Richard Kelsey, William Clinger, and Jonathan Rees: Revised(5)
+	    Report on the Algorithmic Language Scheme
+	    http://www.schemers.org/Documents/Standards/R5Rs/
+[SRFI 16]   Lars T Hansen: Syntax for procedures of variable arity.
+	    http://srfi.schemers.org/srfi-16/
+[SRFI 86]   Joo ChurlSoo:MU and NU simulating VALUES & CALL-WITH-VALUES,
+	    and their related LET-syntax.
+	    http://srfi.schemers.org/srfi-86/
+[SRFI 89]   Marc Feeley: Optional parameters.
+	    http://srfi.schemers.org/srfi-89/
+PLT MzLib   Dorai Sitaram, Bruce Hauman, Jens Axel S��gaard, Gann Bierner,
+	    and Kurt Howard: PLT MzLib: Libraries Manual
+	    http://download.plt-scheme.org/doc/301/html/mzlib/
+
+Copyright
+
+Copyright (c) 2006 Joo ChurlSoo.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the ``Software''), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

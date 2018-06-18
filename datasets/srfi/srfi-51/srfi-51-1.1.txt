@@ -1,0 +1,290 @@
+Title
+
+Handling rest list
+
+Author
+
+Joo ChurlSoo
+
+Related SRFIs
+
+A procedure and 4 macros proposed in this SRFI make a strong combination with
+RECEIVE (SRFI 8) and LET-VALUES (SRFI 11).
+
+Abstract
+
+This SRFI introduces the REST-VALUES procedure which has two modes of
+operation:
+
+1. it processes a rest list after checking its elements with default values or
+   predicate procedures,
+
+2. it processes a rest list with default values without checking its elements;
+   the ARG-AND, ARG-ANDS, ARG-OR, and ARG-ORS macros check the rest arguments
+   that are returned by REST-VAULES that functions as the latter.
+
+Rationale
+
+When defining a procedure with a variable number of arguments, REST-VALUES
+with or without ARG-AND (or ARG-ANDS or ARG-OR or ARG-ORS) reduces the clutter
+of various conditionals and error conditions.
+
+Specification
+
+(REST-VALUES [<caller>] <rest-list> [<args-number-limit>] <default> ...)
+
+    * <caller> is a procedure that has <rest-list>
+    * <args-number-limit> should be an integer or #f or #t.
+    * 1. When the <args-number-limit> is missing or #t or a positive integer,
+         each <default> should be a list that contains default value(s), or a
+         pair whose car is a default value and whose cdr is a predicate
+	 procedure.
+      2. When the <args-number-limit> is #f or a negative integer,
+	 each <default> is any scheme expression. 
+
+1. (first mode of operation)
+
+   REST-VALUES checks whether each element of the <rest-list> is a member of
+   the corresponding <default> list, or satisfies the predicate procedure of
+   the corresponding <default> pair, and then returns the checked element(s).
+   If the element doesn't pass, REST-VALUES signals an error.  When there are
+   no more elements in the <rest-list>, then REST-VALUES additionally returns
+   the car values of the remaining <default>s.  On the other hand, when the
+   number of elements of the <rest-list> are more than the number of the
+   <default>s, the supernumerary elements are additionally returned if the
+   <args-number-limit> is missing or #t, or its value is not less than the
+   number of elements of the <rest-list>.
+
+2. (second mode of operation)
+
+   This is the same as the first except that REST-VALUES does not check each
+   element of the <rest-list>, and it uses #f instead of #t, and an absolute
+   value instead of a simple value as the value of <args-number-limit>.
+
+(ARG-AND [<caller>] <variable> <expression> ...)
+(ARG-ANDS [<caller>] (<variable> <expression> ...) ...)
+
+    * <caller> is a procedure that has each <variable> as an argument.
+    * Each <expression> should contain the corresponding <variable>.
+
+These macros are the same as AND except that these signal an error in
+case AND returns a false value.
+
+(ARG-OR [<caller>] <variable> <expression> ...)
+(ARG-ORS [<caller>] (<variable> <expression> ...) ...)
+
+    * <caller> is a procedure that has each <variable> as an argument.
+    * Each <expression> should contain the corresponding <variable>.
+
+These macros are the same as OR except that these signal an error in
+case OR returns a true value.
+
+Examples
+
+caller    => <procedure caller>
+rest-list => (x 1)
+(rest-values rest-list 2 '(x y z))	 => x 1
+(rest-values rest-list -2 'y)	         => x 1
+(rest-values caller rest-list 1 '(x y z))
+          => error: too many arguments (x 1) <procedure caller>
+(rest-values caller rest-list 2 (list 'x 'y 'z) (cons "string" string?))
+          => error: incorrect argument 1 <procedure string?> <procedure caller>
+(rest-values rest-list '(y z) `(100 . ,number?))
+	  => error: unmatched argument x (y z)
+(rest-values rest-list #f 'y 100 "string")
+	  => x 1 "string"
+(rest-values rest-list #t `(x y z) `(100 . ,number?) `("string" . ,string?))
+          => x 1 "string"
+(rest-values rest-list `(x y z) `(100 . ,number?) `("string" . ,string?))
+          => x 1 "string"
+
+caller => <procedure caller>
+str    => "string"
+num    => 10
+a      => 20
+b      => 30
+(arg-and num (number? num) (< a num b))
+       => error: incorrect argument 10 num (< a num b)
+(arg-and caller num (number? num) (< a num b))
+       => error: incorrect argument 10 num (< a num b) <procedure caller>
+(arg-ands (str (string? str) (< (string-length str) 10))
+	  (num (number? num) (< a num b)))
+       => error: incorrect argument 10 num (< a num b)
+(arg-ands caller
+	  (str (string? str) (< (string-length str) 10))
+	  (num (number? num) (< a num b)))
+       => error: incorrect argument 10 num (< a num b) <procedure caller>
+
+(define (read-line . p-d)
+  (receive (p d) (rest-values p-d 2
+			      (cons (current-input-port) input-port?)
+			      (list 'trim 'concat 'split...))
+    ...))
+(define (read-line . p-d)
+  (receive (p d) (rest-values p-d -2 (current-input-port) 'trim)
+    (arg-ands (p (input-port? p))
+	      (d (memq d '(trim concat split...))))
+    ...))
+
+(define (delete x ls . predicate)
+  (let ((pred (rest-values delete predicate 1 (list equal? eqv? eq?))))
+    ...))
+(define (delete x ls . predicate)
+  (let ((pred (rest-values delete predicate -1 equal?)))
+    (arg-ands delete
+	      (ls (list? ls))
+	      (pred (memq pred (list equal? eqv? eq?))))
+    ...))
+
+(define (substring str . start-end)
+  (let ((str-len (arg-and substring str (string? str) (string-length str))))
+    (receive (start end) (rest-values substring start-end -2 0 str-len)
+      (arg-ands substring
+		(start (integer? start) (<= 0 start str-len))
+		(end (integer? end) (<= start end str-len)))
+      ...)))
+
+Implementation
+
+ERROR (SRFI 23) and TAKE (SRFI 1) are used in implementation of this SRFI.
+
+(define (rest-values rest-list . default-list)
+  (let* ((caller (if (procedure? rest-list) (list rest-list) '()))
+	 (rest (if (null? caller)
+		   rest-list
+		   (if (null? default-list)
+		       (error "too few arguments"
+			      (cons rest-list default-list)
+			      `(rest-values ,@(cons rest-list default-list)))
+		       (car default-list))))
+	 (rest-length (if (list? rest)
+			  (length rest)
+			  (error "incorrect rest list"
+				 rest `(rest-values
+					,@(cons rest-list default-list)))))
+	 (default (if (null? caller) default-list (cdr default-list)))
+	 (number
+	  (and (not (null? default))
+	       (let ((d (car default)))
+		 (or (and (number? d)
+			  (or (and (> rest-length (abs d))
+				   (apply error "too many arguments"
+					  rest caller))
+			      (and (> (length (cdr default)) (abs d))
+				   (error "too many defaults"
+					  (cdr default)
+					  `(rest-values
+					    ,@(cons rest-list default-list))))
+			      d))
+		     (and (eq? d #t) #t)
+		     (and (eq? d #f) 'false)))))
+	 (default (if number (cdr default) default))
+	 (default-length (length default)))
+    (if (or (and (number? number) (< number 0))
+	    (eq? number 'false))
+	(apply values (if (> default-length rest-length)
+			  (append rest (list-tail default rest-length))
+			  rest))
+	(begin
+	  (set! number (min rest-length default-length))
+	  (for-each (lambda (r d)
+		      (cond
+		       ((list? d)
+			(if (not (member r d))
+			    (apply error "unmatched argument" r d caller)))
+		       ((pair? d)
+			(let ((p (cdr d)))
+			  (if (procedure? p)
+			      (if (not (p r))
+				  (apply error "incorrect argument"
+					  r p caller))
+			      (error "incorrect predicate"
+				     p `(rest-values ,@(cons rest-list
+							     default-list))))))
+		       (else
+			(error "incorrect default"
+			       d `(rest-values ,@(cons rest-list
+						       default-list))))))
+		    (take rest number) (take default number))
+	  (apply values
+		 (if (> default-length rest-length)
+		     (append rest
+			     (map (lambda (x)
+				    (if (pair? x)
+					(car x)
+					(error "incorrect default"
+					       x `(rest-values
+						   ,@(cons rest-list
+							   default-list)))))
+				  (list-tail default rest-length)))
+		     rest))))))
+
+(define-syntax arg-and
+  (syntax-rules()
+    ((arg-and arg (a1 a2 ...) ...)
+     (and (or (a1 a2 ...)
+	      (error "incorrect argument" arg `arg `(a1 a2 ...)))
+	  ...))
+    ((arg-and caller arg (a1 a2 ...) ...)
+     (and (or (a1 a2 ...)
+	      (error "incorrect argument" arg `arg `(a1 a2 ...) caller))
+	  ...))))
+
+
+(define-syntax arg-ands
+  (syntax-rules ()
+    ((arg-ands (arg expr ...)  ...)
+     (and (and (or expr (error "incorrect argument" arg `arg `expr))
+	       ...)
+	  ...))
+    ((arg-ands caller (arg expr ...)  ...)
+     (and (and (or expr (error "incorrect argument" arg `arg `expr caller))
+	       ...)
+	  ...))))
+
+(define-syntax arg-or
+  (syntax-rules ()
+    ((arg-or arg (a1 a2 ...) ...)
+     (or (and (a1 a2 ...)
+	      (error "incorrect argument" arg `arg `(a1 a2 ...)))
+	 ...))
+    ((arg-or caller arg (a1 a2 ...) ...)
+     (or (and (a1 a2 ...)
+	      (error "incorrect argument" arg `arg `(a1 a2 ...) caller))
+	 ...))))
+
+(define-syntax arg-ors
+  (syntax-rules ()
+    ((arg-ors (arg expr ...) ...)
+     (or (or (and expr (error "incorrect argument" arg `arg `expr))
+	     ...)
+	 ...))
+    ((arg-ors caller (arg expr ...) ...)
+     (or (or (and expr (error "incorrect argument" arg `arg `expr caller))
+	     ...)
+	 ...))))
+
+Copyright
+
+Copyright (C) Joo ChurlSoo (2004). All Rights Reserved.
+
+This document and translations of it may be copied and furnished to others, and
+derivative works that comment on or otherwise explain it or assist in its
+implementation may be prepared, copied, published and distributed, in whole or
+in part, without restriction of any kind, provided that the above copyright
+notice and this paragraph are included on all such copies and derivative works.
+However, this document itself may not be modified in any way, such as by
+removing the copyright notice or references to the Scheme Request For
+Implementation process or editors, except as needed for the purpose of
+developing SRFIs in which case the procedures for copyrights defined in the
+SRFI process must be followed, or as required to translate it into languages
+other than English.
+
+The limited permissions granted above are perpetual and will not be revoked by
+the authors or their successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS"
+basis and THE AUTHOR AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.

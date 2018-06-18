@@ -1,0 +1,2173 @@
+..............................  A Library of Streams  ..............................
+..............................   by Philip L. Bewig   ..............................
+..............................    pbewig@swbell.net   ..............................
+..............................     31 January 2003    ..............................
+
+
+
+
+ABSTRACT
+~~~~~~~~
+Along with higher-order functions, one of the hallmarks of functional programming is
+lazy evaluation.  A primary manifestation of lazy evaluation is lazy lists, generally
+called streams by scheme programmers, where evaluation of a list element is delayed
+until its value is needed.  This library defines a set of procedures and syntax that
+allow convenient processing of streams, describes why they were written the way they
+were, and shows several examples of their use.
+
+
+
+RATIONALE
+~~~~~~~~~
+Two of the defining characteristics of functional programming languages are
+higher-order functions, which provide a powerful tool to allow programmers to abstract
+data representations away from an underlying concrete implementation, and lazy
+evaluation, which allows programmers to modularize a program and recombine the pieces
+in useful ways.  Scheme provides higher-order functions through its lambda keyword and
+lazy evaluation through its delay keyword.  A primary manifestation of lazy evaluation
+is lazy lists, generally called streams by scheme programmers, where evaluation of a
+list element is delayed until its value is needed.  Streams can be used, among other
+things, to compute with infinities, conveniently process simulations, program with
+coroutines, and reduce the number of passes over data.  This library defines a
+practical set of functions and syntax for programming with streams.
+ 
+Scheme has a long tradition of computing with streams.  The great computer science
+textbook "Structure and Interpretation of Computer Programs" (known by its acronym
+SICP), by Harold Abelson and Gerald Jay Sussman, with Julie Sussman (1996, MIT Press,
+ISBN 0-262-01153-0, with full text available at www-mitpress.mit.edu/sicp), uses
+streams extensively.  The example given in R5RS makes use of streams to integrate
+systems of differential equations using the method of Runge-Kutta.  MIT Scheme, the
+original implementation of scheme, provides streams natively.  "Scheme and the Art of
+Programming", a textbook by George Springer and Daniel P. Friedman, discusses streams.
+Some scheme-like languages also have traditions of using streams:  Winston and Horn,
+in their classic lisp textbook, discuss streams, and so does Larry Paulson in his
+text on ML.  Streams are an important and useful data structure.
+
+Basically, a stream is much like a list, and can either be null or can consist of an
+object (the stream element) followed by another stream; the difference to a list is
+that elements aren't evaluated until they are accessed.  All the streams mentioned
+above use the same underlying representation, with the null stream represented by '()
+and stream pairs constructed by (cons car (delay cdr)), which must be implemented as
+syntax.  These streams are known as head-strict, because the head of the stream is
+always computed, whether or not it is needed.
+
+Streams are the central data type -- just as arrays are for most imperative languages
+and lists are for lisp and scheme -- for the "pure" functional languages miranda and
+haskell.  But those streams are subtly different from the traditional scheme streams
+of SICP et al.  The difference is at the head of the stream, where miranda and haskell
+provide streams that are fully lazy, with even the head of the stream not computed
+until it is needed.  We'll see in a moment the operational difference between the two
+types of streams.
+
+Philip Wadler, Walid Taha, and David MacQueen, in their paper "How to add laziness to
+a strict language without even being odd" (available at
+http://citeseer.nj.nec.com/102172.html in various formats), describe how they added
+streams to the SML/NJ compiler.  They discuss two kinds of streams:  odd streams, as
+in SICP et al, and even streams, as in haskell; the names odd and even refer to the
+parity of the number of constructors (delay, cons, nil) used to represent the stream.
+Here are the first two figures from their paper, rewritten in scheme:
+
+;;; FIGURE 1 -- ODD                 ;;; FIGURE 2 -- EVEN
+
+(define nil1 '())                   (define nil2 (delay '()))
+
+(define (nil1? strm)                (define (nil2? strm)
+  (null? strm))                       (null? (force strm)))
+
+(define-syntax cons1                (define-syntax cons2
+  (syntax-rules ()                    (syntax-rules ()
+    ((cons1 obj strm)                   ((cons2 obj strm)
+      (cons obj (delay strm)))))         (delay (cons obj strm)))))
+
+(define (car1 strm)                 (define (car2 strm)
+  (car strm))                         (car (force strm)))
+
+(define (cdr1 strm)                 (define (cdr2 strm)
+  (force (cdr strm)))                 (cdr (force strm)))
+
+(define (map1 func strm)            (define (map2 func strm)
+                                      (delay (force
+  (if (nil1? strm)                      (if (nil2? strm)
+    nil1                                  nil2
+    (cons1                                (cons2
+      (func (car1 strm))                    (func (car2 strm))
+      (map1 func (cdr1 strm)))))            (map2 func (cdr2 strm)))))))
+
+(define (countdown1 n)              (define (countdown2 n)
+                                      (delay (force
+  (cons1 n (countdown1 (- n 1))))       (cons2 n (countdown2 (- n 1))))))
+
+(define (cutoff1 n strm)            (define (cutoff2 n strm)
+  (cond                               (cond
+    ((zero? n) '())                     ((zero? n) '())
+    ((nil1? strm) '())                  ((nil2? strm) '())
+    (else                               (else
+      (cons                               (cons
+        (car1 strm)                         (car2 strm)
+        (cutoff (- n 1)                     (cutoff2 (- n 1)
+                (cdr1 strm))))))                     (cdr2 strm))))))
+
+It is easy to see the operational difference between the two kinds of streams, using
+an example adapted from the paper:
+
+> (define (12div n) (/ 12 n))       > (define (12div n) (/ 12 n))
+> (cutoff1 4                        > (cutoff2 4
+    (map1 12div (countdown1 4)))        (map2 12div (countdown2 4)))
+error: divide by zero               (3 4 6 12)
+
+The problem of odd streams is that they do too much work, having an "off-by-one"
+error that causes them to evaluate the next element of a stream before it is needed.
+Mostly that's just a minor leak of space and time, but if evaluating the next element
+causes an error, such as dividing by zero, it's a silly, unnecessary bug.
+
+It is instructive to look at the coding differences between odd and even streams.
+We expect the two constructors nil and cons to be different, and they are; the odd
+nil and cons return a strict list, but the even nil and cons return promises.  Nil?,
+car and cdr change to accomodate the underlying representation differences.  Cutoff
+is identical in the two versions, because it doesn't return a stream.
+
+The subtle but critical difference is in map and countdown, the two functions that
+return streams.  They are identical except for the (delay (force ...)) that wraps the
+return value in the even version.  That looks odd, but is correct.  It is tempting to
+just eliminate the (delay (force ...)), but that doesn't work, because, given a
+promise x, even though (delay (force x)) and x both evaluate to x when forced, their
+semantics are different, with x being evaluated and cached in one case but not the
+other.  That evaluation is, of course, the same "off-by-one" error that caused the
+problem with odd streams.  Note that (force (delay x)) is something different
+entirely, even though it looks much the same.
+
+Unfortunately, that (delay (force ...)) is a major notational inconvenience, because
+it means that the representation of streams can't be hidden inside a few primitives
+but must infect each function that returns a stream, making streams harder to use,
+harder to explain, and more prone to error.  Wadler et al solve the notational
+inconvenience in their SML/NJ implementation by adding special syntax -- the keyword
+"lazy" -- within the compiler.  Since scheme allows syntax to be added via a macro,
+it doesn't require any compiler modifications to provide streams.  Shown below is a
+scheme implementation of figure 3 from the paper, with the (delay (force ...)) hidden
+within stream-define, which is the syntax used to create a function that returns a
+stream:
+
+;;; FIGURE 1 -- ODD      ;;; FIGURE 2 -- EVEN     ;;; FIGURE 3 -- EASY
+
+(define nil1             (define nil2             (define nil3
+  '())                     (delay '()))             (delay '()))
+
+(define (nil1? strm)     (define (nil2? strm)     (define (nil3? strm)
+  (null? strm))            (null? (force strm))     (null? (force strm)))
+
+(define-syntax cons1     (define-syntax cons2     (define-syntax cons3
+  (syntax-rules ()         (syntax-rules ()         (syntax-rules ()
+    ((cons1 obj strm)        ((cons2 obj strm)        ((cons3 obj strm)
+      (cons                    (delay                   (delay
+        obj                      (cons                    (cons
+          (delay                   obj                      obj
+            strm)))))              strm)))))                strm)))))
+
+(define (car1 strm)      (define (car2 strm)      (define (car3 strm)
+  (car strm))              (car (force strm)))      (car (force strm)))
+
+(define (cdr1 strm)      (define (cdr2 strm)      (define (cdr3 strm)
+  (force (cdr strm)))      (cdr (force strm)))      (cdr (force strm)))
+
+                                                  (define-syntax stream-define
+                                                   (syntax-rules ()
+                                                    ((stream-define (name args ...)
+                                                                    body0 body1 ...)
+                                                     (define (name args ...)
+                                                      (delay (force
+                                                       (begin body0 body1 ...)))))))
+
+(define (map1 func strm) (define (map2 func strm) (stream-define (map3 func strm)
+                           (delay (force
+  (if (nil1? strm)           (if (nil2? strm)       (if (nil3? strm)
+    nil1                       nil2                   nil3
+    (cons1                     (cons2                 (cons3
+      (func                      (func                  (func
+        (car1 strm))               (car2 strm))           (car3 strm))
+      (map1                      (map2                  (map3
+        func                       func                   func
+        (cdr1                      (cdr2                  (cdr3
+          strm)))))                  strm)))))))            strm)))))
+
+(define (countdown1 n)   (define (countdown2 n)   (stream-define (countdown3 n)
+                           (delay (force
+  (cons1                     (cons2                 (cons3
+    n                          n                      n
+    (countdown1                (countdown2            (countdown3
+      (- n 1))))                 (- n 1))))))           (- n 1))))
+
+(define (cutoff1 n strm) (define (cutoff2 n strm) (define (cutoff3 n strm)
+  (cond                    (cond                    (cond
+    ((zero? n) '())          ((zero? n) '())          ((zero? n) '())
+    ((nil1? strm) '())       ((nil2? strm) '())       ((nil3? strm) '())
+    (else                    (else                    (else
+      (cons                    (cons                    (cons
+        (car1 strm)              (car2 strm)              (car3 strm)
+        (cutoff1                 (cutoff2                 (cutoff3
+          (- n 1)                  (- n 1)                  (- n 1)
+          (cdr1                    (cdr2                    (cdr3
+            strm))))))               strm))))))               strm))))))
+
+It is now easy to see the notational inconvenience of Figure 2, as the bodies of map1
+and map3 are identical, as are countdown1 and countdown3.  All of the inconvenience
+is hidden in the stream primitives, where it belongs, so functions that use the
+primitives won't be burdened.  This means that users can just step up and use the
+library without any knowledge of how the primitives are implemented, and indeed the
+implementation of the primitives can change without affecting users of the primitives,
+which would not have been possible with the streams of Figure 2.  With this
+implementation of streams, (cutoff3 4 (map3 12div (countdown3 4))) evaluates to
+(3 4 6 12), as it should.
+
+This library provides streams that are even, not odd.  This decision overturns years
+of experience in the scheme world, but follows the traditions of the "pure" functional
+languages such as miranda and haskell.  The primary benefit is elimination of the
+"off-by-one" error that odd streams suffer.  Of course, it is possible to use even
+streams to represent odd streams, as Wadler et al show in their figure 4, so nothing
+is lost by choosing even streams as the default.
+
+Obviously, stream elements are evaluated when they are accessed, not when they are
+created; that's the definition of lazy.  Additionally, stream elements must be
+evaluated only once, and the result cached in the event it is needed again; that's
+common practice in all languages that support streams.  Following the rule of R5RS
+section 1.1 fourth paragraph, an implementation of streams is permitted to delete a
+stream element from the cache and reclaim the storage it occupies if it can prove
+that the stream element cannot possibly matter to any future computation.
+
+
+
+SPECIFICATION
+~~~~~~~~~~~~~
+A stream is a new data type, disjoint from all other data types, that contains a
+promise that, when forced, is either nil (a single object distinguishable from all
+other objects) or consists of an object (the stream element) followed by a stream.
+Each stream element is evaluated exactly once, when it is first retrieved (not when
+it is created); once evaluated its value is saved to be returned by subsequent
+retrievals without being evaluated again.  Streams and stream elements are never
+mutated; all functions are purely applicative.  Stream-define, stream-cons, and
+stream-of are the only syntax definitions.  The various folds, append, concat, reverse,
+and sort only make sense with finite streams.  Errors are not required to be signalled
+as in R5RS section 1.3.2, though implementations are encouraged to detect and report
+the error.
+
+
+Constructors:
+STREAM-NULL -- the nil stream
+STREAM-CONS object stream -- syntax to prepend object onto head of stream
+STREAM object ... -- a newly-allocated stream whose elements are object ...
+LIST->STREAM list -- a newly-allocated stream containing elements of list
+VECTOR->STREAM vector -- a newly-allocated stream containing elements of vector
+STRING->STREAM string -- newly-allocated stream containing characters of string
+STREAM-OF expr qualifier ... -- comprehension syntax for infinite streams
+STREAM-FROM start [step] -- stream of numbers from start [step=1]
+STREAM-FROM-TO start stop [step] -- stream from start to stop [step=1]
+STREAM-REPEAT obj ... -- infinite stream of obj ...
+STREAM-ITERATE func obj -- (stream obj (func obj) (func (func obj)) ...)
+
+Stream-null is the distinguished nil stream.  Stream-cons is the primitive stream
+constructor, and is necessarily implemented as syntax; the result of every
+stream-cons must be different from the result of every other stream-cons, in the
+sense of eq?.  Stream and list->stream both construct finite streams containing
+the indicated objects, differing only in how they take their arguments; when
+passed no objects, both stream and list->stream return stream-null.  Similar
+conversions are provided from vectors and strings.
+
+A stream comprehension consists of the syntactic keyword "stream-of," followed by
+a result expression, followed by one or more qualifiers.  There are three types of
+qualifiers:  generators, declarations, and filters.  A generator is distinguished
+by the syntactic keyword "in"; the variable name given before the keyword is bound
+sequentially to each element of the generator stream in subsequent qualifiers and
+the result expression.  Additional syntactic keywords "in list", "in vector", "in
+string", "in port", and "in port reader" allow the generators to be lists (which
+generate the individual elements of the list, in order), vectors (which generate
+the individual elements of the vector, in order), strings (which generate the
+individual characters of the string), ports (which generate the individual characters
+from the port), or modified ports (which generate the individual elements recognized
+by the reader function), respectively, or an expression which evaluates to one of
+these types.  A declaration is distinguished by the syntactic keyword "is"; the
+variable name given before the keyword is let-bound to the expression following the
+keyword in subsequent qualifiers and the result expression.  A filter is a boolean
+expression using the previously bound variables or free variables of the expression;
+only expressions for which the filter is not #f are included in the result expression.
+The result of a stream comprehension is a stream consisting of the elements in the
+form of the result expression that were generated by the cross-product of the various
+generators and are not #f for each of the filters.  A stream comprehension may appear in a
+program anywhere a stream may appear.  The order in which generator elements appear in
+the result stream is unspecified.
+
+The remaining constructors compute streams on demand.  Stream-from produces a stream
+of numbers with a specified starting point and optional step size; the start and step
+need not be integral, and may be negative.  Stream-from-to is like stream-from, but
+produces finite streams; the stop value is included in the stream, and the default
+step is -1 if stop is less than start.  Stream-repeat creates a cycle of the indicated
+objects, repeating from the start as necessary.  Stream-iterate repeatedly evaluates
+the same function, first on the base object, then on the result of applying the
+function to the base object, and so on, with the initial base as the first element of
+the result stream; a simple example of stream-iterate produces random numbers, first a
+seed, then a linear congruential function applied to the seed, and so on.
+
+
+Predicates:
+STREAM? object -- #t if object is a stream, #f otherwise
+STREAM-NULL? object -- #t if object is the null stream, #f otherwise
+STREAM-PAIR? object -- #t if object is a non-null stream, #f otherwise
+
+These predicates recognize and categorize streams.  If stream? is #f, both
+stream-null? and stream-pair? must also be #f.  If stream? is #t, one of stream-null?
+and stream-pair? must be #t and the other must be #f.
+
+
+Selectors:
+STREAM-CAR stream -- first item in stream, error if empty
+STREAM-CDR stream -- stream containing all items in stream except first, error if empty
+STREAM-CAR+CDR stream -- (values (stream-car stream) (stream-cdr stream))
+STREAM-LAST stream -- last item in stream, error if empty
+STREAM-BUTLAST stream -- stream containing all items in stream except last
+STREAM-CAAR to STREAM-CDDDDR -- compositions of stream-car and stream-cdr
+STREAM-REF stream n -- nth item in stream, counting from zero
+STREAM-FIRST to STREAM-TENTH -- synonym for (stream-ref stream (- nth 1))
+STREAM-TAKE n stream -- stream of first n items in stream
+STREAM-TAKE-UNTIL pred? stream -- stream of stream prefix where pred? is #f
+STREAM-TAKE-WHILE pred? stream -- stream of stream prefix where pred? is not #f
+STREAM-DROP n stream -- nth stream-cdr of stream
+STREAM-DROP-UNTIL pred? stream -- stream less prefix not satisfying pred?
+STREAM-DROP-WHILE pred? stream -- stream less prefix satisfying pred?
+STREAM-SPLIT n stream -- (values (take ...) (drop ...))
+STREAM-SPLIT-UNTIL pred? stream -- (values (take-until ...) (drop-until ...))
+STREAM-SPLIT-WHILE pred? stream -- (values (take-while ...) (drop-while ...))
+
+All the selector functions return either single items from a stream or a sub-stream
+of a stream.  Stream-car is the first item in a stream, stream-cdr is the rest of
+the stream after the first item, and stream-car+cdr deconstructs a stream into its
+primitive values.  Stream-last and stream-butlast are the analogous selectors at the
+end of a stream.  There are twenty-eight functions stream-caar through stream-cddddr
+that compose combinations of stream-car and stream-cdr.  All these functions result
+in an error if the indicated stream element or sub-stream doesn't exist.
+
+Stream-ref returns the nth item in the stream, counting from zero.  The ten functions
+stream-first through stream-tenth return the nth item in the stream, counting from
+one.  All these functions result in an error if the indicated n is out of bounds.
+
+The various stream-take functions all return a prefix of a stream, the various
+stream-drop functions all return a suffix of a stream, and the various stream-split
+functions return both.  All the streams returned by these functions can be recombined
+with stream-append; thus, (stream-append (stream-take n stream) (stream-drop n stream))
+always returns a copy of the original stream for any non-negative n and stream.  None
+of these functions ever produce an error; if the indicated stream doesn't exist, the
+null stream is returned.
+
+
+Higher-order functions:
+STREAM-DEFINE (name args ...) body0 body1 ... -- create stream-valued function
+STREAM-MAP func stream ... -- stream produced by applying func to streams
+STREAM-FOR-EACH proc stream ...  -- perform proc element-wise on stream ...
+STREAM-FILTER pred? stream -- stream containing only items with pred? not #f
+STREAM-REMOVE pred? stream -- stream containing only items with pred? #f
+STREAM-PARTITION pred? stream -- (values (pred? => not #f) (pred? => #f))
+STREAM-FOLD-LEFT func base stream ... -- apply func pairwise to base and items
+STREAM-FOLD-LEFT-ONE func stream ... -- apply func pairwise to stream items
+STREAM-FOLD-RIGHT func base stream ... -- apply func pairwise to base and items
+STREAM-FOLD-RIGHT-ONE func base stream ... -- apply func pairwise to items
+STREAM-SCAN-LEFT func base stream ... -- stream of partial reductions of stream
+STREAM-SCAN-LEFT-ONE func stream ... -- partial reductions of stream from first
+STREAM-SCAN-RIGHT func stream ... -- stream of partial reductions of stream
+STREAM-SCAN-RIGHT-ONE func stream ... -- partial reductions of stream from first
+
+Stream-define is syntax that creates a function that returns a stream; it is used
+to define all the other stream-valued functions in the library.  Stream-define
+takes an optional rest parameter and works analogously to define.  There is no
+corresponding stream-lambda.
+
+Stream-map traverses one or more streams, creating a new stream by applying a
+function element-wise to the given streams; the arity of the function must match
+the number of streams.  Stream-for-each also traverses one or more streams,
+performing a procedure with the appropriate arity element-wise for its side
+effects.  Both visit the elements of a stream in order, starting from their cars.
+
+Stream-filter and stream-remove apply a predicate to each element of a stream and
+create a new stream containing only those elements that do, or do not, satisfy the
+predicate.  Stream-partition returns both.  The order of elements in the output
+stream is the same as their order in the input stream.
+
+The various folds are the fundamental iterators on finite streams, reducing one or
+more streams to a single value by applying a binary function pairwise to successive
+items.  The left folds operate from the cars of the streams to the tails, and the
+right folds operate in the opposite direction.  The -one variants take the leading
+elements in the streams as the base to begin pairwise operations, while the plain
+variants give an explicit base.  There are several examples of the use of
+stream-fold in the examples section.
+
+The various scans accumulate partial folds in a stream, working equally well on
+both finite and infinite streams.  The result of the scan is a stream containing
+the base element, followed by the result of the operation on the base and first
+element, followed by the result of the operation on the first result and the
+second element, and so on.
+
+
+Input and output:
+PORT->STREAM reader [port] -- stream of objects returned by reader from port
+PORT->CHAR-STREAM [port] -- stream of characters on [current input] port
+PORT->LINE-STREAM [port] -- stream of lines on [current input] port
+PORT->WORD-STREAM [port] -- stream of words on [current input] port
+STREAM-DISPLAY stream [port] -- display stream on [current output] port
+STREAM-DISPLAY-LINES stream [port] -- display newline-separated stream
+STREAM-WRITE stream [port] -- write stream on [current output] port
+
+Port->stream is the fundamental stream input function.  The reader argument is a
+function that reads a port and either returns the next object of interest from the
+port or the eof-object when the port terminates.  The other three input functions
+specialize port->stream as indicated; the lines of a line-stream are separated by
+newlines, and the words of a word-stream are maximal sequences that satisfy
+char-alphabetic?.  All four input functions read from either the port given as
+their last argument or the current input port.
+
+The three output functions send each stream element to either the current output
+port or the port indicated in their final argument.  Stream-display outputs the
+elements in the manner of the display function, for humans, stream-display-lines
+does the same but with elements separated by newlines, and stream-write outputs
+the elements in the manner of the write function, for computers.
+
+
+Other stream operations:
+STREAM->LIST stream [n] -- new list containing [first n] elements of stream
+STREAM->VECTOR stream [n] -- new vector containing [first n] elements of stream
+STREAM->STRING stream [n] -- new string containing [first n] stream characters
+STREAM-APPEND stream ... -- append one or more streams end to end
+STREAM-CONCAT stream -- append a stream of streams into a single stream
+STREAM-REVERSE stream -- new stream with elements of stream in reverse order
+STREAM-ZIP stream ... -- convert multiple streams to stream of lists
+STREAM-UNZIP stream -- convert stream of lists to multiple streams
+STREAM-ALTERNATE stream ... -- stream of items from streams in round-robin
+STREAM-INTERLEAVE stream -- stream of items from stream of streams, diagonally
+STREAM-MERGE lt? stream ... -- merge sorted streams into a new stream by lt?
+STREAM-SORT lt? stream -- newly-allocated stream with elements ordered by lt?
+STREAM-UNIQ eql? stream -- new stream with adjacent duplicates removed
+
+Several useful stream operations that don't fit elsewhere are described here.
+Stream->list returns a newly-allocated list containing the elements of the given
+stream, in order; similar conversions are provided for vectors and strings of
+characters.  Stream-append and stream-concat concatenate multiple streams into
+one, differing only in how they take their arguments.  Stream-reverse returns a
+newly-allocated stream with the elements of the original stream in reverse order.
+Stream-zip and stream-unzip are inverses, converting multiple streams to a stream
+of lists and back.  Stream-alternate creates a newly-allocated stream containing
+the elements of the argument stream in "round-robin" fashion, first the car of
+each stream, in order, followed by the cadr of each stream, in order, and so on.
+Stream-interleave creates a newly-allocated stream containing the elements of the
+argument streams in "diagonal" order; it is used internally by the stream-of
+comprehensions.  Stream-merge takes a less-than predicate lt? and one or more streams
+ordered by the less-than predicate and returns a newly-allocated stream with the
+elements of the original streams ordered by the less-than predicate.  Stream-sort
+takes a less-than predicate lt? and returns a newly-allocated stream with the elements
+of the original stream ordered by the less-than predicate; it is required to run in
+O(n log n) time.  Stream-merge and stream-sort must both be stable, with equal
+elements appearing in the output in the same order they appeared in the input.
+Stream-uniq creates a new stream containing the elements of the input stream with only
+one occurrence of adjacent duplicates, in the same order as the original stream.
+
+
+
+EXAMPLES
+~~~~~~~~
+Numerous examples are given below to cement the reader's understanding of streams
+and to show how streams can be exploited.  We start with some simple examples of
+infinite streams shown in virtually all textbooks on functional programming:
+
+    > (define ones (stream-cons 1 ones))
+    > (stream->list ones 10)
+    (1 1 1 1 1 1 1 1 1 1)
+    > (define nats (stream-map + ones (stream-cons 0 nats)))
+    > (stream->list nats 10)
+    (1 2 3 4 5 6 7 8 9 10)
+    > (define facts (stream-map * nats (stream-cons 1 facts)))
+    > (stream->list facts 10)
+    (1 2 6 24 120 720 5040 40320 362880 3628800)
+
+It is easy to see how these expressions work, though until you master some of the
+stream idioms, it can be hard to create them yourself.  Most imperative-style loops
+translate fairly directly to various maps, filters, zips, folds, and scans of streams,
+and if you look for them, you will be rewarded with natural and concise code.
+
+The next example generates the stream of prime numbers, based on an example by
+Chris Reade in his book "Elements of Functional Programming" (1989, Addison-Wesley,
+ISBN 0-201-12915-9), section 8.2.3.  
+
+    ;; PRIMES -- the stream of prime numbers
+    (stream-define (next-prime a b strm)
+        (let ((c (stream-car strm)) (x (stream-cdr strm)))
+            (cond ((< b c) (next-prime a (+ a b) strm))
+                  ((< c b) (stream-cons c (next-prime a b x)))
+                  (else (next-prime a (+ a b) x)))))
+    (stream-define (sift a x) (next-prime a (+ a a) x))
+    (stream-define (sieve strm)
+        (let ((a (stream-car strm)) (x (stream-cdr strm)))
+            (stream-cons a (sieve (sift a x)))))
+    (define primes (sieve (stream-from 2)))
+
+Next-prime finds the next number in strm that isn't a multiple of a.  Sift initializes
+the b parameter of next-prime, which is always the next higher multiple of a.  Sieve
+adds the next number in sequence to the stream of primes, then sifts; because it calls
+itself recursively, sieve eventually uses each prime number as the basis of a sift.
+Finally, primes initializes the sieve.  The tree of calls grows like this:
+
+    sieve <- from 2
+    2:: <- sieve <- sift 2 <- from 3
+    2:: <- sieve <- next-prime 2 4 <- 3::from 4
+    2::3:: <- sieve <- sift 3 <- next-prime 2 4 <- from 4
+    2::3:: <- sieve <- next-prime 3 6 <- next-prime 2 6 <- from 5
+    2::3::5:: <- sieve <- sift 5 <- next-prime 3 6 <- next-prime 2 6 <- from 6
+
+A similar example, that appears in many texts, creates an ordered stream of the hamming
+numbers, defined as the numbers 2^i * 3^j * 5^k for all non-negative i, j, and k.
+
+    ;; HAMMING -- stream of hamming numbers
+    (define hamming
+        (stream-cons 1
+            (stream-uniq =
+                (stream-merge <
+                    (stream-map (lambda (x) (* x 2)) hamming)
+                    (stream-map (lambda (x) (* x 3)) hamming)
+                    (stream-map (lambda (x) (* x 5)) hamming)))))
+
+Assume that a stream of hamming numbers already exists.  To get more hamming numbers,
+make three copies of the stream and multiply each element of the three streams by 2,
+3, and 5, respectively, then merge the three copies in order, append to the original
+stream, and eliminate duplicates.  The initial hamming stream consists only of the
+number 1, which is 2^0 * 3^0 * 5^0.  To display the first twenty hamming numbers,
+say (stream->list hamming 20).
+
+Programming with streams can sometimes be tricky, with even very small changes
+having very large consequences.  Two versions of the cutoff function described
+previously are shown below (all the "4" functions are identical to their "3"
+counterparts except cutoff):
+
+;;; THIS ONE WORKS                   ;;; THIS ONE DOESN'T
+(define (cutoff3 n strm)             (define (cutoff4 n strm)
+  (cond                                (cond
+    ((zero? n) '())                      ((nil4? strm) '())
+    ((nil3? strm) '())                   ((zero? n) '())
+    (else                                (else
+      (cons                                (cons
+        (car3 strm)                          (car4 strm)
+        (cutoff3 (- n 1)                     (cutoff4 (- n 1)
+                 (cdr3 strm))))))                     (cdr4 strm))))))
+
+The only difference is the order of the two tests.  But the difference is huge.
+The expression (cutoff4 4 (map4 12div (countdown4 4))) fails with a divide-by-zero
+error.  The problem is that when countdown4 reaches zero, nil4? forces the stream
+and produces a divide-by-zero error; the fix is that zero? must be called first to
+stop the recursion and prevent the stream being forced.  This kind of bug can be
+very hard to see.  In fact, it was.  This very bug bit me as I was translating the
+sample code from Wadler et al, and cost about a week in the development of the
+library.
+
+
+Stream comprehensions are a remarkably simple and useful notation for building
+streams of maps and filters invented by David Turner for his KRC language based on
+the set notation of Zermelo and Frankel.  Here, for instance, is a classic stream
+comprehension for finding pythagorean triples, written in both haskell and in the
+notation of this library:
+
+-- pythagorean triples       ;; pythagorean triples
+pyth n =                     (define (pyth n)
+    [ (a,b,c) |                  (stream-of (list a b c)
+        a <- [1 .. n],               (a in (stream-from-to 1 n))
+        b <- [a .. n],               (b in (stream-from-to a n))
+        c <- [b .. n],               (c in (stream-from-to b n))
+        a*a + b*b == c*c ]           (= (+ (* a a) (* b b)) (* c c))))
+
+Stream comprehensions in this library are introduced by the stream-of syntactic
+keyword.  Following stream-of is a result expression and a series of either
+generators, declarations, or filters; there must be at least one item in the
+series, and the first item must not be a filter.  Generators are distinguished
+by the "in" keyword; the given variable is bound to each element of the given
+stream.  There is also syntax to allow lists, vectors and strings to be
+generators; see the specification of the stream-of syntax for details.
+Declarations are distinguished by the "is" keyword, and function as shorthand
+for a let-binding that is local within the stream comprehension.  Filters,
+generators and declarations may use any variable bound in a prior generator or
+declaration or free in the comprehension; filters must evaluate to a boolean.
+The result of a stream comprehension is a stream consisting of the elements in
+the form of the result expressions that were generated by the cross-product of
+the various generators and are not #f for each of the filters.  For example, calling
+(pyth 15) evaluates to (stream (3 4 5) (5 12 13) (6 8 10) (9 12 15)).  Beware
+that the order of elements in the result is undefined in the specification and
+not necessarily what you might expect, a consequence of the stream-interleave
+algorithm that allows any of the streams to be infinite.
+
+The pyth stream comprehension expands to the following code, which you can be glad
+was written for you by a macro:
+
+    (define (pyth n)
+      (let* ((signal (list 'signal))
+             (strm (let ((f (lambda (a)
+                     (let ((f (lambda (b)
+                       (let ((f (lambda (c) (if (= (+ (* a a) (* b b)) (* c c))
+                                                (stream (list a b c))
+                                                (stream signal)))))
+                         (stream-interleave (stream-map f (stream-from-to b n)))))))
+                       (stream-interleave (stream-map f (stream-from-to a n)))))))
+                     (stream-interleave (stream-map f (stream-from-to 1 n))))))
+        (stream-remove (lambda (x) (eq? x signal)) strm)))
+
+Here are some more examples of stream comprehensions:
+
+    (stream-of (* x x) (x in (stream-from 1)) (odd? x))
+        => (stream 1 9 25 49 81 121 169 225 289 ...)
+
+    (stream->list (stream-of x (x in (stream-zip (stream 'a 'b 'c) (stream-from 1)))
+        => ((a 1) (b 2) (c 3)) ; parallel generators used to provide index
+
+    (stream-define (qsort lt? strm)
+        (if (stream-null? strm)
+            stream-null
+            (stream-append
+                (qsort lt? (stream-of x (x in (stream-cdr strm))
+                                        (lt? x (stream-car strm))))
+                (stream (stream-car strm))
+                (qsort lt? (stream-of x (x in (stream-cdr strm))
+                                        (not (lt? x (stream-car strm))))))))
+        => #<procedure> to sort a stream by the lt? less-than predicate
+
+    (define (rember x lst) ; remove x from lst
+        (cond ((null? lst) lst)
+              ((equal? x (car lst)) (cdr lst))
+              (else (cons (car lst) (rember x (cdr lst))))))
+    (stream-define (perms lst)
+        (if (null? lst)
+            (stream '())
+            (stream-of (cons x perm)
+                (x in list lst)
+                (perm in (perms (rember x lst))))))
+        => #<procedure> to create a stream of permutations of a list
+
+The declaration syntax is shorthand for a let expression (not letrec, as the variable
+named in the qualifier isn't bound until subsequent qualifiers); given a qualifier
+(var is declaration), var will be let-bound to declaration in subsequent qualifiers
+and the result expression.  A simple example is
+
+    (stream-of (cons x y) (x in (stream-from 1)) (y is (* x x)))
+
+which evaluates to (stream (1 . 1) (2 . 4) (3 . 9) (4 . 16) (5 . 25) ...).
+
+Be careful when writing stream comprehensions.  The left example works fine, but
+the right example doesn't:
+
+; THIS ONE WORKS                    ; THIS ONE DOESN'T
+(stream-of (list a b c)             (stream-of (list a b c)
+  (a in (stream-from-to 1 20))        (a in (stream-from 1)) (<= a 20)
+  (b in (stream-from-to a 20))        (b in (stream-from a)) (<= b 20)
+  (c in (stream-from-to b 20))        (c in (stream-from b)) (<= c 20)
+  (= (+ (* a a) (* b b)) (* c c)))    (= (+ (* a a) (* b b)) (* c c)))
+
+The reason it fails is because the first generator keeps on generating integers even
+after reaching the limit, testing each to see if it exceeds the limit; the one that
+works stops generating integers at the limit, returning the null stream.  Just
+remember that computing with infinities can be troublesome.
+
+It is a surprise to the unwary that stream-of generates result expressions in an
+undefined order.  The problem occurs when there are multiple infinite generators,
+like this:
+
+    (stream-of (list i j) (i in (stream-from 1)) (j in (stream-from 1)))
+
+It makes sense to many programmers that the cross-products are generated in depth-first
+order, (1 1) (1 2) (1 3) (1 4) ... (2 1) (2 2) (2 3) (2 4) ....  The problem is that
+if the generators are infinite, none of the (2 1) (2 2) ... results will ever appear
+in the output stream, for the same reason that (stream-append s1 s2) results in s1 if
+s1 is infinite; one stream keeps generating forever, and the other stream is never
+allowed to generate at all.  The stream-interleave function fixes this problem by
+"diagonalizing" the order in which results are generated; for the stream comprehension
+shown above, the result will be (stream (1 1) (2 1) (1 2) (3 1) (1 3) (2 2) (1 4) (4 1)
+(1 5) (2 3) (1 6) (3 2) (1 7) (2 4) (1 8) (5 1) (1 9) (2 5) ...).  This order is fixed
+for a given implementation of stream-interleave, but different implementations of
+stream-interleave could give different result orders.
+
+Haskell programmers should be aware that the stream comprehensions given here are a
+subtle improvement over haskell's list comprehensions.  Haskell Report 1.4 section
+3.11 says "a list comprehension returns the list of elements produced by evaluating
+[the result expression] in the successive environments created by the nested,
+depth-first evaluation of the generators in the qualifier list."  Thus, haskell's
+list comprehensions fail when presented with an infinite list anywhere but the first
+generator.  Consider this example:
+
+-- haskell fails            ;; scheme succeeds, slowly
+[ (a,b,c) |                 (stream-of (list a b c)
+    a <- [1 ..],                (a in (stream-from 1))
+    b <- [a ..],                (b in (stream-from a))
+    c <- [b ..],                (c in (stream-from b))
+    a*a + b*b == c*c ]          (= (+ (* a a) (* b b)) (* c c))))
+
+The haskell definition tests the triples (1,1,1) (1,1,2) (1,1,3) ..., never finding
+one that succeeds.  The scheme definition finds (3 4 5) (6 8 10) (5 12 13) (9 12 15)
+(8 15 17) ..., working slowly as it tests numerous non-pythagorean triples.  These
+optimized versions work much more quickly, by greatly shrinking the space of search
+solutions using a little knowledge of geometry:
+
+-- haskell                  ;; scheme
+[ (a,b,c) |                 (stream-of (list a b c)
+    a <- [1..],                 (a in (stream-from 1))
+    b <- [a..a+a],              (b in (stream-from-to a (+ a a)))
+    c <- [b..a+b],              (c in (stream-from-to b (+ a b)))
+    a*a + b*b == c*c            (= (+ (* a a) (* b b)) (* c c))))
+
+It is interesting to compare the order in which these two expressions compute results.
+Haskell produces results in strictly increasing order on the a parameter, with ties
+broken by the b parameter.  Scheme streams produce results that are generally
+increasing on the a parameter, but with some exceptions.  Look at the first several
+results from each:
+
+-- haskell                  ;; scheme
+(3,4,5)                     (3 4 5)
+(6,8,10)                    (6 8 10)
+(8,15,17)                   (8 15 17)
+(9,12,15)                   (9 12 15)
+(12,16,20)                  (12 16 20)
+(15,20,25)                  (15 20 25)
+(16,30,34)                  (16 30 34)
+(18,24,30)                  (18 24 30)
+(20,21,29)                  (20 21 29)
+(21,28,35)                  (21 28 35)
+(24,32,40)                  (24 32 40)
+(24,45,51)                  (24 45 51)
+(27,36,45)                  (27 36 45)
+(28,45,53)                  (28 45 53)
+(30,40,50)                  (30 40 50)
+(32,60,68)  --------------  (33 44 55)
+(33,44,55)  --------------  (32 60 68)
+(33,56,65)                  (33 56 65)
+(36,48,60)                  (36 48 60)
+(39,52,65)  --------------  (40 42 58)
+(40,42,58)  --------------  (39 52 65)
+(40,75,85)                  (40 75 85)
+(42,56,70)                  (42 56 70)
+
+For haskell programmers and others who might want it, it is relatively straight
+forward to provide a stream comprehension that generates result expressions in
+the same nested, depth-first order as haskell, subject to the same restriction
+that all generators except the first must supply a finite number of elements.
+The result of finite-stream-of is a lazily-computed stream, and despite its name,
+is infinite if the first generator is infinite:
+
+    ;; FINITE-STREAM-OF expr qualifier ... -- comprehensions for finite streams
+    (define-syntax finite-stream-of
+        (syntax-rules ()
+            ((finite-stream-of expr qual ...)
+                (finite-stream-of-helper expr '() qual ...))))
+    (define-syntax finite-stream-of-helper
+        (syntax-rules (in list vector string port is)
+            ((finite-stream-of-helper expr base (var in generator) qual ...)
+                (let loop ((strm generator))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var in list generator) qual ...)
+                (let loop ((strm (list->stream generator)))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var in vector generator) qual ...)
+                (let loop ((strm (vector->stream generator)))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var in string generator) qual ...)
+                (let loop ((strm (string->stream generator)))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var in port reader generator) qual ...)
+                (let loop ((strm (port->stream reader generator)))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var in port generator) qual ...)
+                (let loop ((strm (port->stream generator)))
+                    (if (stream-null? strm)
+                        base
+                        (let ((var (stream-car strm)))
+                            (finite-stream-of-helper
+                                expr (loop (stream-cdr strm)) qual ...)))))
+            ((finite-stream-of-helper expr base (var is declaration) qual ...)
+                (let ((var declaration))
+                    (finite-stream-of-helper expr base qual ...)))
+            ((finite-stream-of-helper expr base pred? qual ...)
+                (if pred?
+                    (finite-stream-of-helper expr base qual ...)
+                    base))
+            ((finite-stream-of-helper expr base)
+                (cons expr base))))
+
+One final comment on stream comprehensions.  It would seem that (stream-of 1 #t)
+should expand to the null stream, since there are no generators.  However, this
+stream comprehension expands to
+
+    (let* ((signal (list 'signal))
+          ((strm (if #t (stream 1) (stream signal))))
+        (stream-remove (lambda (x) (eq? x signal)) strm))
+
+and thus returns (stream 1).  The expression (stream-of 1) behaves the same way.
+This is proper behavior, even if it seems strange, a consequence of the manner in
+which the expansion is defined.
+
+
+We next look at some useful operations on finite streams:
+
+    ;; STREAM-LENGTH stream -- number of elements in stream
+    (define (stream-length strm)
+        (let loop ((strm strm) (length 0))
+            (if (stream-null? strm)
+                length
+                (loop (stream-cdr strm) (+ 1 length)))))
+
+    ;; STREAM-SUM stream -- sum of items in stream
+    (define (stream-sum strm) (stream-fold-left + 0 strm))
+
+    ;; STREAM-PRODUCT stream -- product of items in stream
+    (define (stream-product strm) (stream-fold-left * 1 strm))
+
+    ;; STREAM-MAXIMUM lt? stream -- largest item in stream according to lt?
+    (define (stream-maximum lt? strm)
+        (stream-fold-left-one (lambda (x y) (if (lt? x y) y x)) strm)))
+
+    ;; STREAM-MINIMUM lt? stream -- smallest item in stream according to lt?
+    (define (stream-minimum lt? strm)
+        (stream-fold-left-one (lambda (x y) (if (lt? x y) x y)) strm)))
+
+    ;; STREAM-SUM-IF pred? stream -- sum of stream items that satisfy pred?
+    (define (stream-sum-if pred? strm) (stream-sum (stream-filter pred? strm)))
+
+    ;; STREAM-COUNT-IF pred? stream -- number of stream items that satisfy pred?
+    (define (stream-count-if pred? strm)
+        (stream-length (stream-filter pred? strm)))
+
+    ;; STREAM-SIGMA func stream -- apply func to each element of stream, then sum
+    (define (stream-sigma func strm) (stream-fold-left + 0 (stream-map func strm)))
+
+    ;; STREAM-CHAR-TO char1 char2 -- new stream of characters from char1 to char2
+    (stream-define (stream-char-to char1 char2)
+        (stream-map integer->char
+            (stream-from-to (char->integer char1)
+                            (char->integer char2)
+                            (if (char<? char1 char2) 1 -1))))
+
+    ;; STREAM-AND stream -- #f if any item of stream is #f, or the last "and"
+    (define (stream-and strm) (stream-fold-left (lambda (x y) (and x y)) #t strm))
+
+    ;; STREAM-OR stream -- the first non-#f "or" of stream, or #f
+    (define (stream-or strm) (stream-fold-left (lambda (x y) (or x y)) #f strm))
+
+    ;; STREAM-ALL pred? stream -- #f if any item of stream is #f, or the last "and"
+    (define (stream-all pred? strm) (stream-and (stream-map pred? strm)))
+
+    ;; STREAM-ANY pred? stream -- the first non-#f "or" of stream, or #f
+    (define (stream-any pred? strm) (stream-or (stream-map pred? strm)))
+
+These operations capture common idioms on streams.  Stream-length is the number of
+elements in the stream.  Stream-sum and stream-product are the sum and product,
+respectively, of the zero or more elements of a stream.  Stream-maximum and
+and stream-minimum calculate the requested statistic on a non-null stream, using a
+user-defined less-than predicate to compare stream elements.  Stream-sum-if and
+stream-count-if apply a predicate to each element of a stream; if the element
+satisfies the predicate, it is summed or counted, respectively.  Stream-sigma
+applies a user-defined function to each element of a stream and sums the results.
+Stream-char-to operates on characters as stream-from-to does on numbers.
+
+Stream-and and stream-or return the logical conjunction and disjunction, respectively,
+of a stream of boolean values.  Stream-all and stream-any are similar, but apply a
+user-specified predicate.  In all cases the value returned is the value returned by
+the underlying predicate, which in the case of a non-#f value is not necessarily #t.
+
+All these functions are programmed as one-liners based on folds, filters and maps.
+Why show them here?  Because they are frequently useful.  Even though we often think
+of streams as being infinite, streams are actually just as useful when they are
+finite.  The advantage of finite streams over lists is that only a single stream
+element needs to be in memory at a time, whereas with lists the entire list must be
+stored.  Depending on the amount of memory available, it is entirely possible for
+a stream algorithm to work perfectly well when the corresponding list algorithm fails.
+Of course, using streams has a cost, the cost of the inherent delays and forces, so
+choosing between lists and streams involves a space/time trade-off, just like many
+other choices in computing.
+
+
+Another set of list functions that are frequently useful with streams are the
+membership and association functions:
+
+    ;; STREAM-MEM eql? obj stream -- first cdr of stream with car eql? obj, or #f
+    (define (stream-mem eql? obj strm)
+        (cond ((stream-null? strm) #f)
+              ((eql? (stream-car strm) obj) strm)
+              (else (stream-mem eql? obj (stream-cdr strm)))))
+
+    ;; STREAM-MEMBER obj stream -- first cdr of stream with car equal? obj, or #f
+    (define (stream-member obj strm) (stream-mem equal? obj strm))
+
+    ;; STREAM-MEMQ obj stream -- first cdr of stream with car eq? obj, or #f
+    (define (stream-memq obj strm) (stream-mem eq? obj strm))
+
+    ;; STREAM-MEMV obj stream -- first cdr of stream with car eqv? obj, or #f
+    (define (stream-memv obj strm) (stream-mem eqv? obj strm))
+
+    ;; STREAM-ASC eql? obj stream -- first pair in stream with car eql? obj, or #f
+    (define (stream-asc eql? obj strm)
+        (cond ((stream-null? strm) #f)
+              ((eql? (car (stream-car strm)) obj) (stream-car strm))
+              (else (stream-asc eql? obj (stream-cdr strm)))))
+
+    ;; STREAM-ASSOC obj stream -- first pair in stream with car equal? obj, or #f
+    (define (stream-assoc obj strm) (stream-asc equal? obj strm))
+
+    ;; STREAM-ASSQ obj stream -- first pair in stream with car eq? obj, or #f
+    (define (stream-assq obj strm) (stream-asc eq? obj strm))
+
+    ;; STREAM-ASSV obj stream -- first pair in stream with car eqv? obj, or #f
+    (define (stream-assv obj strm) (stream-asc eqv? obj strm))
+
+    ;; STREAM-ACONS key value stream -- cons (key . value) onto stream))
+    (stream-define (stream-acons key value strm)
+        (stream-cons (cons key value) strm)))
+
+The four member functions search for an object in a stream, returning the first cdr
+of the stream that satisfies the indicated equality predicate.  All four return #f
+if the object is not in the stream.
+
+An association-stream, or a-stream, is a stream of pairs representing a key/value
+dictionary.  The four assoc functions search for a key in a stream, returning the
+first key/value pair that satisfies the indicated equality predicate.  All four
+return #f if the key is not in the stream.  Stream-acons conses a new (key . value)
+pair onto an a-stream; any existing pairs with the same key remain on the stream,
+but will never be seen by the stream-assoc functions.
+
+We'll soon see a practical use for a-streams.
+
+
+A common use of streams is in simulations, which need a stream of random numbers.
+Here is a simple random number generator, based on the linear congruential generator
+of Stephen K. Park and Keith W. Miller in their paper "Random Number Generators:
+Good Ones Are Hard To Find" (Communications of the ACM, vol 31, October 1988, pages
+1192-1201).  The stream contains random integers between 0 and 2^31, exclusive, and
+the seed, if given, must be an integer on the same range; although the results are
+returned as reals, due to the possibility of integer overflow in the intermediate
+calculations, all stream elements are integral:
+
+    ;; STREAM-RANDOM [seed] -- stream of random integers
+    (stream-define (stream-random . seed)
+        (let* ((a 16807.0) ; 7^5
+               (m 2147483647.0) ; 2^31-1
+               (next (lambda (s)
+                         (let ((t (* a s)))
+                             (- t (* m (floor (/ t m))))))))
+            (stream-iterate next
+                (if (null? seed) 1043618065.0 (car seed)))))
+
+This sequence can be mapped to random fractions on the range zero to one, exclusive,
+by
+
+    (stream-map (lambda (x) (/ x 2147483647.0)) (stream-random))
+
+Now that we have some random numbers, we can use the method of Ernesto Cesaro to
+estimate the value of pi.  Cesaro proved that the probability any two integers
+chosen at random will be relatively prime is 6 / pi^2.  Thus, it is possible to
+compute an approximation to pi by choosing numerous pairs of random numbers and
+determining the fraction of them that are relatively prime; the more number pairs,
+the better the approximation.  We can calculate the greatest common denominator of
+two numbers by Euclid's algorithm:
+
+    ;; GCD m n -- greatest common denominator of m and n
+    (define (gcd m n) (if (zero? n) m (gcd n (modulo m n))))
+
+Each element of cesaro-stream is either #t or #f, depending on whether or not the next
+two numbers in the random stream are relatively prime:
+
+    (stream-define (cesaro-stream . seed)
+        (stream-map-successive-pairs (lambda (m n) (= (gcd m n) 1))
+                                     (if (null? seed)
+                                         (stream-random)
+                                         (stream-random (car seed)))))
+
+    (stream-define (stream-map-successive-pairs func strm)
+        (stream-cons
+            (func (stream-car strm) (stream-cadr strm))
+            (stream-map-successive-pairs func (stream-cddr strm))))
+
+Now the output of cesaro-stream can be fed to a procedure that counts the number of
+passes and failures and produces a stream of estimated probabilities:
+
+    (stream-define (stream-monte-carlo strm pass fail)
+        (stream-cons
+            (if (and (zero? pass) (zero? fail)) 0 (/ pass (+ pass fail)))
+            (stream-monte-carlo
+                (stream-cdr strm)
+                (if (stream-car strm) (+ pass 1) pass)
+                (if (stream-car strm) fail (+ fail 1)))))
+
+Finally, we compute a stream of approximations to pi using Cesaro's theorem:
+
+    (stream-define (cesaro-pi . seed)
+        (stream-map (lambda (p) (if (zero? p) 0 (sqrt (/ 6 p))))
+                    (stream-monte-carlo
+                        (if (null? seed)
+                            (cesaro-stream)
+                            (cesaro-stream (car seed))) 0 0)))
+
+Sadly, (cesaro-pi) converges slowly, with (stream-ref (cesaro-pi) 100000) equal to
+3.13988121949355.  This example follows section 3.5.5 of SICP, where Abelson and
+Sussmann contrast the stream-based version of Cesaro's algorithm to earlier
+versions that didn't use streams.  They conclude that the stream version is better,
+due to improved modularity without assignment or local state.  In particular, they
+note in their exercises that the stream-monte-carlo procedure can be reused to
+estimate other functions, without change.
+
+
+Another way to compute pi is by expanding the series pi / 4 = 1 - 1/3 + 1/5 - 1/7
++ 1/9 - 1/11 + ... accelerated by the euler transformation applied recursively.
+This example follows SICP, section 3.5.3:
+
+    ;; PI-SUMMANDS -- successive terms of 1 - 1/3 + 1/5 - 1/7 + 1/9 - 1/11 + ...
+    (stream-define (pi-summands n)
+        (stream-cons (/ 1.0 n) (stream-map - (pi-summands (+ n 2)))))
+
+    ;; PI-STREAM -- successive approximations of pi
+    (define pi-stream
+        (stream-map
+            (lambda (x) (* x 4.0))
+            (stream-scan-left-one + (pi-summands 1.0))))
+
+    ;; EULER-TRANSFORM strm -- accelerate sequence of approximations
+    (stream-define (euler-transform s)
+        (let ((s0 (stream-ref s 0))
+              (s1 (stream-ref s 1))
+              (s2 (stream-ref s 2))
+              (square (lambda (x) (* x x))))
+            (stream-cons (- s2 (/ (square (- s2 s1))
+                                  (+ s0 (* -2 s1) s2)))
+                         (euler-transform (stream-cdr s)))))
+
+    ;; MAKE-TABLEAU transform strm -- create recursive stream of transformed streams
+    (stream-define (make-tableau transform s)
+        (stream-cons s (make-tableau transform (transform s))))
+
+    ;; ACCELERATED-SEQUENCE transform s -- recursively accelerate stream of streams
+    (stream-define (accelerated-sequence transform s)
+        (stream-map stream-car (make-tableau transform s)))
+
+Computation begins with the naive series computed in pi-stream.  This works, but the
+computation is very slow, with (stream-ref pi-stream 1000) accurate only to three
+decimal places (/ 1 2001).  A single acceleration by the euler transformation
+
+                  ( S(n+1) - S(n) ) ^ 2
+    S(n+1)  -  --------------------------
+               S(n-1) - 2 * S(n) + S(n+1)
+
+is much better, with (stream-ref (euler-transform pi-stream) 20) accurate to three
+places.  Even better, the transformer can be applied recursively to successive
+transformations of the original stream, yielding a super-accelerated sequence where
+
+    (stream-ref (accelerated-sequence euler-transform pi-stream) 7)
+
+computes the value of pi to fourteen decimal places:  3.141592653589778.  This is
+an impressive result, as the base stream, pi-stream, requires on the order of ten
+trillion iterations to achieve the same accuracy.  Abelson and Sussman say:
+
+    We could have implemented these acceleration techniques without
+    using streams.  But the stream formulation is particularly elegant
+    and convenient because the entire sequence of states is available
+    to us as a data structure that can be manipulated with a uniform
+    set of operations.
+
+
+We next show a simple-minded text formatter that illustrates the use of co-routines,
+in an example adapted from the textbook "Scheme and the Art of Programming" by George
+Springer and Daniel P. Friedman (1989, McGraw-Hill, ISBN 0-07-060522-X), section 15.5.
+Function
+
+    (fmt inport outport max-width)
+
+copies a text file from the input port to the output port, ensuring that no output
+line contains more than max-width characters.  The text formatter is rather
+simple-minded, failing to insert an extra space after sentences and failing to
+recognize paragraphs marked by two successive newlines; its purpose is to show the
+use of streams to implement co-routines, not to replace decent text formatters.
+
+    ;; READ-NON-WHITE port -- next non-white character sequence on port
+    (define (read-non-white port)
+        (let loop ((c (read-char port)) (nw '()))
+            (cond ((eof-object? c) (if (null? nw) c (list->string (reverse nw))))
+                  ((not (char-whitespace? c)) (loop (read-char port) (cons c nw)))
+                  ((null? nw) (loop (read-char port) nw))
+                  (else (list->string (reverse nw))))))
+
+    ;; BUILD-LINE width words -- build stream of words into lines of max width
+    (stream-define (build-line width words)
+        (let loop ((line "") (words words))
+            (cond ((stream-null? words)
+                      (if (string=? line "") stream-null (stream line)))
+                  ((string=? line "")
+                      (loop (stream-car words) (stream-cdr words)))
+                  ((< (+ (string-length line) (string-length (stream-car words)))
+                       width)
+                      (loop (string-append line " " (stream-car words))
+                            (stream-cdr words)))
+                  (else (stream-cons line (loop (stream-car words)
+                                            (stream-cdr words)))))))
+
+    ;; FMT inp outp width -- write inp lines to outp, no line longer than width
+    (define (fmt inp outp width)
+        (stream-display-lines
+            (build-line width
+                (port->stream read-non-white inp))
+             outp))
+
+Here, the three functions port->stream, build-line, and display-lines are co-routines,
+each programmed in a monolithic style but operating in an incremental style.
+Monolithic style means that the function is coded to process the entire stream as if
+it was all presented at once.  Incremental style means that each function operates
+only long enough to process a single stream element, then passes control to the next
+function.  This style of programming is useful because it is easy to insert new
+functions between the existing functions.  If there is a new requirement to print
+output with page headers and footers, just replace display-lines with a function
+display-pages that writes page headers and footers along with text lines.  If there is
+then another new requirement to accumulate multi-column text, just insert a function
+build-page between build-line and display-page that accumulates lines into columns.
+The end result is a rich programming style reminiscent of unix pipelines, with
+pre-programmed pieces that can be inserted or deleted as needed.  By the way, this
+richness extends to the stream library itself, with port->stream and
+stream-display-lines already provided natively.
+
+What makes this style work is that all the functions take a stream as input and
+return a stream as output, analogously to unix pipelines that provide text files as
+both input and output.  Look at the build-line function shown above for an example.
+If you were to replace the stream functions with their list counterparts, the
+function would take a list of words and return a list of lines, accumulating the
+entire list of lines before returning.  But because build-line, and the functions
+around it, use streams, it only accumulates a single line before passing back to
+its caller, which eventually returns control so build-line can accumulate the next
+line, and so on until there are no more words.  At the other end, build-line calls
+port->stream whenever it needs another word, and port->stream just accumulates a
+single word from the input and waits until it is called again to process the rest
+of the input.  At any given moment, the only memory used by the streams is that
+required to store the words of the current line, plus the machinery to restart the
+streams as needed.
+
+It is useful to consider the other ways this might have been written.  There are
+essentially three choices.  The normal way is to build a single monolithic function
+that does the entire processing, reading input only as necessary and creating output
+as soon as it is ready, but such a large function is hard to modify as processing
+requirements change.  The opposite choice is to make numerous small functions that
+modularize the program in a useful way, making changes relatively easy, but that
+requires the entire file to reside in memory all at once, since the last function
+in the chain can't directly call the first.  A third approach keeps the modularity
+of small functions, but adds some control mechanism that allows them to be called
+as needed without storing the entire input, an approach that is isomorphic to
+streams.  John Hughes, in his article "Why Functional Programming Matters" (The
+Computer Journal (32:2) 1989 pg 99-107, available electronically from
+www.math.chalmers.se/~rjmh/papers/whyfp.html), uses a similar example to show how
+laziness enables modularity.
+
+The text formatter passes streams of text from one function to the next.  But it
+is possible to pass streams of any type.  For instance, coroutines are an excellent
+way to organize a multi-pass compiler, with streams of the appropriate internal
+representation at each point of the process.
+
+
+Our final example is a lazy dictionary, where definitions and uses may occur in
+any order; in particular, uses may precede their corresponding definitions.  This
+is a common problem.  Many programming languages allow functions to be used before
+they are defined.  Macro processors must collect definitions and emit uses of text
+in order.  An assembler needs to know the address that a linker will subsequently
+give to variables.  The usual method is to make two passes over the data, collecting
+the definitions on the first pass and emitting the uses on the second pass.  But
+streams allow the dictionary to be built lazily, so that only a single pass is
+needed.  This example is based on section 8.4.1 of Chris Reade's book, cited
+previously.  Consider a stream of requests:
+
+    (define requests
+        (stream
+            '(get 3)
+            '(put 1 "a")    ; use follows definition
+            '(put 3 "c")    ; use precedes definition
+            '(get 1)
+            '(get 2)
+            '(put 2 "b")    ; use precedes definition
+            '(put 4 "d")))  ; unused definition
+
+We want a procedure that will return "cab", which is the result of (get 3), (get 1),
+and (get 2), in order.  We need utility functions to separate the request stream into
+two streams, one of get requests and one of put requests:
+
+    (define (get? obj) (eq? (car obj) 'get))
+    (stream-define (gets strm) (stream-map cadr (stream-filter get? strm)))
+    (stream-define (puts strm) (stream-map cdr  (stream-remove get? strm)))
+
+Now, run-dict inserts each element of the puts stream into a lazy dictionary,
+represented as an a-stream, then looks up each element of the gets stream:
+
+    (stream-define (run-dict requests)
+      (let ((dict (build-dict (puts requests))))
+        (stream-map (lambda (x) (stream-assoc x dict)) (gets requests))))
+
+Dict is created in the let, but nothing is initially added to it.  Each time
+stream-assoc performs a lookup, enough of dict is built to satisfy the lookup, but
+no more.  We are assuming that each item is defined once and only once.  All that
+is left is to define the function that inserts new items into the dictionary, lazily.
+
+    (stream-define (build-dict puts)
+      (if (stream-null? puts)
+          stream-null
+          (stream-cons (stream-car puts) (build-dict (stream-cdr puts)))))
+
+Now, run the dictionary and print the result:
+
+    > (stream-display (stream-map cadr (run-dict requests)))
+    cab>
+
+This is an astonishing result.  There are less than a dozen lines of simple, even
+trivial, code.  Three one-liners separate the request stream.  The dictionary is
+built by the common idiom of recursion down cdrs.  Processing couldn't be easier:
+build the dictionary, then look up each item.  It all seems so simple, especially
+when you consider the alternatives without streams.  The naive approach makes two
+passes over the data, collecting definitions on the first pass, saving them in some
+data structure, and emitting uses on the second pass.  The complicated approach
+somehow caches the request stream as it is read, emitting uses as it finds the
+matching definitions.  Of course, this is exactly what the stream approach does, but
+behind the scenes, hidden from the programmer, who needn't be concerned with the
+details.
+
+The '(put 4 "d") definition is never added to the dictionary.  To see this, augment
+build-dict so it prints the key each time it is called:
+
+    (stream-define (build-dict puts)
+      (if (stream-null? puts)
+          stream-null
+          (begin
+            (display (car (stream-car puts)))
+            (stream-cons (stream-car puts) (build-dict (stream-cdr puts))))))
+
+Now processing the request stream shows both definitions and uses:
+
+    > (stream-display (stream-map cadr (run-dict requests)))
+    13ca2b>
+
+At each moment in the life of dict, only enough of the puts stream has been consumed
+to satisfy the gets that have already been seen.  The 4 key is never added to the
+lazy dictionary.
+
+
+There are many other places to look for examples of programming with streams.  Any
+textbook on functional programming provides numerous examples; SICP is a favorite,
+as are books by Richard Bird and Philip Wadler.  The haskell standard library
+provided many examples used in the reference implementation.  The field of functional
+reactive programming, in which streams represent values that react to their inputs,
+remaining purely functional, presents another example.  Sadly, most real-world
+examples of programming with streams are too big to show or even discuss in the
+constrained space here.
+
+The final word on the utility of programming with streams comes from Abelson and
+Sussman (SICP section 3.5.3):
+
+    Streams with delayed evaluation can be a powerful modelling
+    tool, providing many of the benefits of local state and
+    assignment.  Moreover, they avoid some of the theoretical
+    tangles that accompany the introduction of assignment into
+    a programming language.
+
+    The stream approach can be illuminating because it allows us
+    to build systems with different module boundaries than systems
+    organized around assignment to state variables.  For example,
+    we can think of an entire time series (or signal) as a focus
+    of interest, rather than the values of the state variables at
+    individual moments.  This makes it convenient to combine and
+    compare components of state from different moments.
+
+So be it.
+
+
+
+REFERENCE IMPLEMENTATION
+~~~~~~~~~~~~~~~~~~~~~~~~
+A reference implementation of streams is shown below.  It strongly prefers simplicity
+and clarity to efficiency.  The reference implementation relies on the record types
+of SRFI-9 and should instead use whatever mechanism the native scheme system uses to
+create new types.  The stream-error function aborts by calling (car '()) and should be
+rewritten to call the native error handler.
+
+The stream-filter function presents a unique difficulty.  It can be simply defined
+as follows:
+
+    (stream-define (stream-filter pred? strm)
+      (cond ((stream-null? strm) strm)
+            ((pred? (stream-car strm)
+              (stream-cons (stream-car strm)
+                           (stream-filter pred? (stream-cdr strm)))
+            (else (stream-filter pred? (stream-cdr strm)))))
+
+But this implementation of stream-filter has a problem.  Consider this example,
+due to Joe Marshall:
+
+    (define (times3 n)
+      (stream-ref
+        (stream-filter
+          (lambda (x) (zero? (modulo x n)))
+          (stream-from 0))
+        3))
+
+Called as (times3 5), the function evaluates to 15, as desired.  But called as
+(times3 1000000), it churns the disk, creating closures and caching each result
+as it counts slowly to 3,000,000; on most scheme systems, this function will
+run out of memory long before it computes an answer.  The problem is a leaking
+scenario when there is a gap between elements that pass the predicate, which
+occurs because the naive definition hangs on to the head of the gap.  The
+reference implementation shows one way around this problem.  Native implementations
+of streams should "do the right thing" with regard to space consumption in
+stream-filter.  Of course, if the stream is bound in a scope outside the
+stream-filter expression, there is nothing to be done except cache the elements
+as they are filtered.
+
+;;; STREAM -- library of syntax and functions to manipulate streams
+
+;;; A stream is a new data type, disjoint from all other data types, that
+;;; contains a promise that, when forced, is either nil (a single object
+;;; distinguishable from all other objects) or consists of an object (the
+;;; stream element) followed by a stream.  Each stream element is evaluated
+;;; exactly once, when it is first retrieved (not when it is created); once
+;;; evaluated its value is saved to be returned by subsequent retrievals
+;;; without being evaluated again.
+
+;; STREAM-ERROR message -- print message then abort execution
+(define (stream-error message) (display message) (newline) (car '()))
+
+;; STREAM-TYPE -- type of streams
+;; MAKE-STREAM obj -- convert object to type of streams
+;; STREAM-PROMISE stream -- extract promise from stream
+;; STREAM? object -- #t if object is a stream, #f otherwise
+(define-record-type stream-type
+    (make-stream promise)
+    stream?
+    (promise stream-promise))
+
+;; STREAM-NULL -- the distinguished null stream
+(define stream-null (make-stream (delay '())))
+
+;; STREAM-NULL? object -- #t if object is the nil stream, #f otherwise
+(define (stream-null? obj)
+    (and (stream? obj)
+         (null? (force (stream-promise obj)))))
+
+;; STREAM-CONS object stream -- the primitive stream constructor
+(define-syntax stream-cons
+    (syntax-rules ()
+        ((stream-cons obj strm)
+            (make-stream (delay (cons obj strm))))))
+
+;; STREAM-PAIR? object -- #t if object is a non-null stream, #f otherwise
+(define (stream-pair? obj)
+    (and (stream? obj)
+         (not (null? (force (stream-promise obj))))))
+
+;; STREAM-CAR stream -- first element of stream
+(define (stream-car strm)
+    (if (not (stream? strm))
+        (stream-error "attempt to take car of non-stream"))
+    (if (stream-null? strm)
+        (stream-error "attempt to take car of null stream"))
+    (car (force (stream-promise strm))))
+
+;; STREAM-CDR stream -- stream containing all elements in stream except first
+(define (stream-cdr strm)
+    (if (not (stream? strm))
+        (stream-error "attempt to take cdr of non-stream"))
+    (if (stream-null? strm)
+        (stream-error "attempt to take cdr of null stream"))
+    (cdr (force (stream-promise strm))))
+
+;; STREAM-DEFINE (name args ...) body ... -- define stream-valued function
+;; STREAM-DEFINE (name args ... . rest) body ... -- define stream-valued func
+(define-syntax stream-define
+    (syntax-rules ()
+        ((stream-define name "next" (args ...) (arg . rest) body0 body1 ...)
+            (stream-define name "next" (args ... arg) rest body0 body1 ...))
+        ((stream-define name "next" (args ...) () body0 body1 ...)
+            (stream-define name "done" (args ...) body0 body1 ...))
+        ((stream-define name "next" (args ...) rest body0 body1 ...)
+            (stream-define name "rest" (args ...) rest body0 body1 ...))
+        ((stream-define name "done" (args ...) body0 body1 ...)
+            (define (name args ...)
+                (make-stream (delay (force (stream-promise (begin body0 body1 ...)))))))
+        ((stream-define name "rest" (args ...) rest body0 body1 ...)
+            (define (name args ... . rest)
+                (make-stream (delay (force (stream-promise (begin body0 body1 ...)))))))
+        ((stream-define (name . rest) body0 body1 ...)
+            (stream-define name "next" () rest body0 body1 ...))
+        ((stream-define (name args ...) body0 body1 ...)
+            (stream-define name "next" () (args ...) body0 body1 ...))))
+
+;; LIST->STREAM list -- new stream containing elements of list
+(stream-define (list->stream lst)
+    (if (not (list? lst))
+        (stream-error "attempt to convert non-list to stream"))
+    (let loop ((lst lst))
+        (if (null? lst)
+            stream-null
+            (stream-cons (car lst) (loop (cdr lst))))))
+
+;; VECTOR->STREAM vector -- new stream containing elements of vector
+(stream-define (vector->stream vec)
+    (if (not (vector? vec))
+        (stream-error "attempt to convert non-vector to stream"))
+    (list->stream (vector->list vec)))
+
+;; STRING->STREAM string -- new stream containing characters of string
+(stream-define (string->stream str)
+    (if (not (string? str))
+        (stream-error "attempt to convert non-string to stream"))
+    (list->stream (string->list str)))
+
+;; STREAM object ... -- new stream whose elements are object ...
+(define (stream . objs) (list->stream objs))
+
+;; STREAM-INTERLEAVE stream -- interleave stream of streams "diagonally"
+(stream-define (stream-interleave-helper s1 s2)
+    (if (stream-null? s1)
+        s2
+        (stream-cons (stream-car s1)
+                     (stream-interleave-helper s2 (stream-cdr s1)))))
+(stream-define (stream-interleave strm)
+    (cond ((stream-null? strm) stream-null)
+          ((stream-null? (stream-car strm))
+              (stream-interleave (stream-cdr strm)))
+          (else (stream-cons
+                    (stream-caar strm)
+                    (stream-interleave-helper
+                        (stream-interleave (stream-cdr strm))
+                        (stream-cdar strm))))))
+
+;; STREAM-OF expr qualifier ... -- stream comprehension syntax for infinite streams
+(define-syntax stream-of
+    (syntax-rules ()
+        ((stream-of expr ...)
+            (let* ((signal (list 'signal))
+                   (strm (stream-of-tail signal expr ...)))
+                (stream-remove (lambda (x) (eq? x signal)) strm)))))
+(define-syntax stream-of-tail
+    (syntax-rules (in list vector string port is)
+        ((stream-of-tail signal expr (var in generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f generator))))
+        ((stream-of-tail signal expr (var in list generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f (list->stream generator)))))
+        ((stream-of-tail signal expr (var in vector generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f (vector->stream generator)))))
+        ((stream-of-tail signal expr (var in string generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f (string->stream generator)))))
+        ((stream-of-tail signal expr (var in port reader generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f (port->stream reader generator)))))
+        ((stream-of-tail signal expr (var in port generator) clause ...)
+            (let ((f (lambda (var) (stream-of-tail signal expr clause ...))))
+                (stream-interleave (stream-map f (port->char-stream generator)))))
+        ((stream-of-tail signal expr (var is declaration) clause ...)
+            (let ((var declaration)) (stream-of-tail signal expr clause ...)))
+        ((stream-of-tail signal expr pred? clause ...)
+            (if pred?
+                (stream-of-tail signal expr clause ...)
+                (stream signal)))
+        ((stream-of-tail signal expr) (stream expr))))
+
+;; STREAM-FROM start [step] -- new stream of numbers from start [step=1]
+(stream-define (stream-from start . step)
+    (if (not (number? start))
+        (stream-error "non-numeric start"))
+    (let ((delta (if (pair? step) (car step) 1)))
+        (if (not (number? delta))
+            (stream-error "non-numeric step"))
+        (stream-cons start (stream-from (+ start delta) delta))))
+
+;; STREAM-FROM-TO start stop [step] -- new stream from start to stop [step=1]
+(stream-define (stream-from-to start stop . step)
+    (if (not (number? start))
+        (stream-error "non-numeric start"))
+    (if (not (number? stop))
+        (stream-error "non-numeric stop"))
+    ;(let ((delta (if (pair? step) (car step) 1)))
+    (let ((delta (cond ((pair? step) (car step)) ((< start stop) 1) (else -1))))
+        (if (not (number? delta))
+            (stream-error "non-numeric step"))
+        (if ((if (negative? delta) < >) start stop)
+            stream-null
+            (stream-cons start (stream-from-to (+ start delta) stop delta)))))
+
+;; STREAM-REPEAT object ... -- infinite stream of object ...
+(stream-define (stream-repeat . objs)
+    (if (null? objs)
+        stream-null
+        (stream-cons (car objs)
+                     (apply stream-repeat (append (cdr objs)
+                                                  (list (car objs)))))))
+
+;; STREAM-ITERATE func obj -- (stream obj (func obj) (func (func obj)) ...)
+(stream-define (stream-iterate func obj)
+    (if (procedure? func)
+        (stream-cons obj (stream-iterate func (func obj)))
+        (stream-error "non-functional object passed to iterate")))
+
+;; STREAM-CAR+CDR stream -- (values (stream-car stream) (stream-cdr stream))
+(define (stream-car+cdr strm)
+    (if (stream-pair? strm)
+        (values (stream-car strm) (stream-cdr strm))
+        (stream-error "argument to car+cdr must be non-null")))
+
+;; STREAM-LAST stream -- last item in stream, error if empty
+(define (stream-last strm)
+    (cond ((stream-null? strm)
+              (stream-error "can't take last item in null stream"))
+          ((stream-null? (stream-cdr strm)) (stream-car strm))
+          (else (stream-last (stream-cdr strm)))))
+
+;; STREAM-BUTLAST stream -- stream containing all items in stream except last
+(stream-define (stream-butlast strm)
+    (cond ((stream-null? strm)
+              (stream-error "attempt to take butlast of null stream"))
+          ((stream-null? (stream-cdr strm)) stream-null)
+          (else (stream-cons (stream-car strm)
+                             (stream-butlast (stream-cdr strm))))))
+
+;; STREAM-CAAR to STREAM-CDDDDR -- compositions of stream-car and stream-cdr
+(define (stream-caar   strm) (stream-car (stream-car   strm)))
+(define (stream-cdar   strm) (stream-cdr (stream-car   strm)))
+(define (stream-cadr   strm) (stream-car (stream-cdr   strm)))
+(define (stream-cddr   strm) (stream-cdr (stream-cdr   strm)))
+(define (stream-caaar  strm) (stream-car (stream-caar  strm)))
+(define (stream-cdaar  strm) (stream-cdr (stream-caar  strm)))
+(define (stream-cadar  strm) (stream-car (stream-cdar  strm)))
+(define (stream-cddar  strm) (stream-cdr (stream-cdar  strm)))
+(define (stream-caadr  strm) (stream-car (stream-cadr  strm)))
+(define (stream-cdadr  strm) (stream-cdr (stream-cadr  strm)))
+(define (stream-caddr  strm) (stream-car (stream-cddr  strm)))
+(define (stream-cdddr  strm) (stream-cdr (stream-cddr  strm)))
+(define (stream-caaaar strm) (stream-car (stream-caaar strm)))
+(define (stream-cdaaar strm) (stream-cdr (stream-caaar strm)))
+(define (stream-cadaar strm) (stream-car (stream-cdaar strm)))
+(define (stream-cddaar strm) (stream-cdr (stream-cdaar strm)))
+(define (stream-caadar strm) (stream-car (stream-cadar strm)))
+(define (stream-cdadar strm) (stream-cdr (stream-cadar strm)))
+(define (stream-caddar strm) (stream-car (stream-cddar strm)))
+(define (stream-cdddar strm) (stream-cdr (stream-cddar strm)))
+(define (stream-caaadr strm) (stream-car (stream-caadr strm)))
+(define (stream-cdaadr strm) (stream-cdr (stream-caddr strm)))
+(define (stream-cadadr strm) (stream-car (stream-cdadr strm)))
+(define (stream-cddadr strm) (stream-cdr (stream-cdadr strm)))
+(define (stream-caaddr strm) (stream-car (stream-caddr strm)))
+(define (stream-cdaddr strm) (stream-cdr (stream-caddr strm)))
+(define (stream-cadddr strm) (stream-car (stream-cdddr strm)))
+(define (stream-cddddr strm) (stream-cdr (stream-cdddr strm)))
+
+;; STREAM-REF stream n -- nth item in stream, counting from zero
+(define (stream-ref strm n)
+    (if (not (stream? strm))
+        (stream-error "attempt to refer to non-stream"))
+    (if (not (integer? n))
+        (stream-error "attempt to refer to non-integral stream position"))
+    (if (< n 0)
+        (stream-error "stream-ref out of bounds"))
+    (let loop ((strm strm) (n n))
+        (cond ((stream-null? strm) (stream-error "stream-ref out of bounds"))
+              ((zero? n) (stream-car strm))
+              (else (loop (stream-cdr strm) (- n 1))))))
+
+;; STREAM-FIRST to STREAM-TENTH -- synonym for (stream-ref stream (- nth 1))
+(define (stream-first   stream) (stream-ref stream 0))
+(define (stream-second  stream) (stream-ref stream 1))
+(define (stream-third   stream) (stream-ref stream 2))
+(define (stream-fourth  stream) (stream-ref stream 3))
+(define (stream-fifth   stream) (stream-ref stream 4))
+(define (stream-sixth   stream) (stream-ref stream 5))
+(define (stream-seventh stream) (stream-ref stream 6))
+(define (stream-eighth  stream) (stream-ref stream 7))
+(define (stream-ninth   stream) (stream-ref stream 8))
+(define (stream-tenth   stream) (stream-ref stream 9))
+
+;; STREAM-TAKE n stream -- new stream of up to the first n items in stream
+(stream-define (stream-take n strm)
+    (if (not (integer? n))
+        (stream-error "attempt to take non-integral number of elements"))
+    (if (< n 0)
+        (stream-error "attempt to take negative number of elements"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (if (or (stream-null? strm) (zero? n))
+        stream-null
+        (stream-cons (stream-car strm)
+                     (stream-take (- n 1) (stream-cdr strm)))))
+
+;; STREAM-TAKE-WHILE pred? stream -- stream of stream prefix where pred? is #t
+(stream-define (stream-take-while pred? strm)
+    (if (not (procedure? pred?))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (let take-while ((s strm) (r stream-null))
+        (if (or (stream-null? s) (not (pred? (stream-car s))))
+            (stream-reverse r)
+            (take-while (stream-cdr s) (stream-cons (stream-car s) r)))))
+
+;; STREAM-TAKE-UNTIL pred? stream -- stream of stream prefix where pred? is #f
+(stream-define (stream-take-until pred? strm)
+    (if (not (procedure? pred?))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (let take-until ((s strm) (r stream-null))
+        (if (or (stream-null? s) (pred? (stream-car s)))
+            (stream-reverse r)
+            (take-until (stream-cdr s) (stream-cons (stream-car s) r)))))
+
+;; STREAM-DROP n stream -- nth cdr of stream
+(stream-define (stream-drop n strm)
+    (if (not (integer? n))
+        (stream-error "attempt to take non-integral number of elements"))
+    (if (< n 0)
+        (stream-error "attempt to take negative number of elements"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (if (or (stream-null? strm) (<= n 0))
+        strm
+        (stream-drop (- n 1) (stream-cdr strm))))
+
+;; STREAM-DROP-WHILE pred? stream -- stream less prefix satisfying pred?
+(stream-define (stream-drop-while pred? strm)
+    (if (not (procedure? pred?))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (if (or (stream-null? strm) (not (pred? (stream-car strm))))
+        strm
+        (stream-drop-while pred? (stream-cdr strm))))
+
+;; STREAM-DROP-UNTIL pred? stream -- stream less prefix not satisfying pred?
+(stream-define (stream-drop-until pred? strm)
+    (if (not (procedure? pred?))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (if (or (stream-null? strm) (pred? (stream-car strm)))
+        strm
+        (stream-drop-until pred? (stream-cdr strm))))
+
+;; STREAM-SPLIT n stream -- (values (take ...) (drop ...))
+(define (stream-split n strm)
+    (if (not (integer? n))
+        (stream-error "attempt to take non-integral number of elements"))
+    (if (< n 0)
+        (stream-error "attempt to take negative number of elements"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (let split ((s strm) (n n) (r '()))
+        (if (or (stream-null? s) (<= n 0))
+            (values (list->stream (reverse r)) s)
+            (split (stream-cdr s) (- n 1) (cons (stream-car s) r)))))
+
+;; STREAM-SPLIT-WHILE pred? stream -- values (take-while ...) (drop-while ...)
+(define (stream-split-while pred? strm)
+    (if (not (procedure? strm))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (let split-while ((s strm) (r '()))
+        (if (or (stream-null? s) (not (pred? (stream-car s))))
+            (values (list->stream (reverse r)) s)
+            (split-while (stream-cdr s) (cons (stream-car s) r)))))
+
+;; STREAM-SPLIT-UNTIL pred? stream -- values (take-until ...) (drop-until ...)
+(define (stream-split-until pred? strm)
+    (if (not (procedure? strm))
+        (stream-error "non-functional predicate"))
+    (if (not (stream? strm))
+        (stream-error "attempt to take elements from non-stream"))
+    (let split-until ((s strm) (r '()))
+        (if (or (stream-null? s) (pred? (stream-car s)))
+            (values (list->stream (reverse r)) s)
+            (split-until (stream-cdr s) (cons (stream-car s) r)))))
+
+;; STREAM-MAP func stream ... -- stream produced by applying func to streams
+(stream-define (stream-map func . strms)
+    (if (not (all stream? strms))
+        (stream-error "stream-map applied to non-stream"))
+    (if (or (null? strms) (any stream-null? strms))
+        stream-null
+        (stream-cons (apply func (map stream-car strms))
+                     (apply stream-map (cons func (map stream-cdr strms))))))
+
+;; STREAM-FOR-EACH proc stream ... -- apply proc elementwise on stream ...
+(define (stream-for-each proc . strms)
+    (if (not (all stream? strms))
+        (stream-error "for-each applied to non-stream"))
+    (let loop ((strms strms))
+        (if (not (any stream-null? strms))
+            (begin (apply proc (map stream-car strms))
+                   (loop (map stream-cdr strms))))))
+
+;; STREAM-FILTER pred? stream -- new stream including only items passing pred?
+(define (stream-filter pred? strm)
+  (stream-filter-aux pred? strm #f))
+(define (stream-filter-aux pred? strm prom)
+  (make-stream
+    (delay
+      (stream-filter-aux-1 pred? (force (stream-promise strm)) prom))))
+(define (stream-filter-aux-1 pred? stuff prom)
+  (cond ((null? stuff) '())
+        ((pred? (car stuff))
+          (cons (car stuff)
+                (let ((prom (list #f)))
+                  (set-car! prom
+                            (stream-filter-aux-2 pred? (cdr stuff) prom))
+                  (stream-filter-aux-3 prom))))
+        (else
+          (let ((more (stream-filter-aux-2 pred? (cdr stuff) prom)))
+            (if prom (set-car! prom more))
+            (more)))))
+(define (stream-filter-aux-2 pred? strm prom)
+  (lambda ()
+    (stream-filter-aux-1 pred? (force (stream-promise strm)) prom)))
+(define (stream-filter-aux-3 prom)
+  (make-stream
+    (delay
+      ((car prom)))))
+
+;; STREAM-REMOVE pred? stream -- stream containing only items with pred? #f
+(stream-define (stream-remove pred? strm)
+    (stream-filter (lambda (x) (not (pred? x))) strm))
+
+;; STREAM-PARTITION pred? stream -- (values (pred? => #t) (pred? => #f))
+(define (stream-partition pred? strm)
+    (if (stream-null? strm)
+        (values stream-null stream-null)
+        (call-with-values
+            (lambda () (stream-partition pred? (stream-cdr strm)))
+            (lambda (pass fail)
+                (let ((obj (stream-car strm)))
+                    (if (pred? obj)
+                        (values (stream-cons obj pass) fail)
+                        (values pass (stream-cons obj fail))))))))
+
+;; STREAM-FOLD-LEFT func base stream ... -- apply func to base and items ...
+(define (stream-fold-left func base . strms)
+    (cond ((not (procedure? func)) (stream-error "non-functional argument"))
+          ((not (all stream? strms)) (stream-error "non-stream argument"))
+          ((null? (cdr strms))
+              (let loop ((base base) (strm (car strms)))
+                  (if (stream-null? strm)
+                      base
+                      (loop (func base (stream-car strm)) (stream-cdr strm)))))
+          (else (let loop ((base base) (strms strms))
+                    (if (any stream-null? strms)
+                        base
+                        (loop (apply func (cons base (map stream-car strms)))
+                              (map stream-cdr strms)))))))
+
+;; STREAM-FOLD-LEFT-ONE func stream ... -- apply func pairwise to stream items
+(define (stream-fold-left-one func . strms)
+    (cond ((null? strms)
+              (stream-error "no stream supplied to stream-fold-left-one"))
+          ((any stream-null? strms)
+              (stream-error "can't apply stream-fold-left-one to null stream"))
+          ((null? (cdr strms))
+              (let ((strm (car strms)))
+                  (stream-fold-left func (stream-car strm) (stream-cdr strm))))
+          (else (apply stream-fold-left func
+                                        (apply func (map stream-car strms))
+                                        (map stream-cdr strms)))))
+
+;; STREAM-FOLD-RIGHT func base stream ... -- apply func pairwise to base and items
+(define (stream-fold-right func base . strms)
+    (cond ((not (procedure? func)) (stream-error "non-functional argument"))
+          ((not (all stream? strms)) (stream-error "non-stream argument"))
+          ((null? (cdr strms))
+              (let loop ((base base) (strm (car strms)))
+                  (if (stream-null? strm)
+                      base
+                      (loop (func base (stream-last strm)) (stream-butlast strm)))))
+          (else (let loop ((base base) (strms strms))
+                    (if (any stream-null? strms)
+                        base
+                        (loop (apply func (cons base (map stream-last strms)))
+                              (map stream-butlast strms)))))))
+
+;; STREAM-FOLD-RIGHT-ONE func base stream ... -- apply func pairwise to items
+(define (stream-fold-right-one func . strms)
+    (cond ((null? strms)
+              (stream-error "no stream supplied to stream-fold-right-one"))
+          ((any stream-null? strms)
+              (stream-error "can't apply stream-fold-right-one to null stream"))
+          ((null? (cdr strms))
+              (let ((strm (car strms)))
+                  (stream-fold-right func (stream-last strm) (stream-butlast strm))))
+          (else (apply stream-fold-right func
+                                         (apply func (map stream-last strms))
+                                         (map stream-butlast strms)))))
+
+;; STREAM-SCAN-LEFT func base stream ... -- stream of partial reductions
+(stream-define (stream-scan-left func base . strms)
+    (if (not (procedure? func))
+        (stream-error "non-functional argument"))
+    (if (not (all stream? strms))
+        (stream-error "non-stream argument"))
+    (stream-cons base
+                 (if (any stream-null? strms)
+                     stream-null
+                     (apply stream-scan-left
+                            func
+                            (apply func base (map stream-car strms))
+                            (map stream-cdr strms)))))
+
+;; STREAM-SCAN-LEFT-ONE func stream ... -- partial reductions, from first
+(stream-define (stream-scan-left-one func . strms)
+    (if (any stream-null? strms)
+        (stream-error "can't apply stream-scan-left-one to null stream")
+        (apply stream-scan-left
+               func
+               (if (pair? (cdr strms))
+                   (apply func (map stream-car strms))
+                   (stream-car (car strms)))
+               (map stream-cdr strms))))
+
+;; STREAM-SCAN-RIGHT func base stream ... -- stream of partial reductions
+(stream-define (stream-scan-right func base . strms)
+    (if (not (procedure? func))
+        (stream-error "non-functional argument"))
+    (if (not (all stream? strms))
+        (stream-error "non-stream argument"))
+    (if (any stream-null? strms)
+        (stream base)
+        (let ((bases
+                 (apply stream-scan-right func base (map stream-cdr strms))))
+            (stream-cons (apply func (stream-car bases) (map stream-car strms))
+                         bases))))
+ 
+;; STREAM-SCAN-RIGHT-ONE func stream ... -- partial reductions, from first
+(stream-define (stream-scan-right-one func . strms)
+    (if (not (procedure? func))
+        (stream-error "non-functional argument"))
+    (if (not (all stream? strms))
+        (stream-error "non-stream argument"))
+    (if (any stream-null? strms)
+        (stream-error "can't apply stream-scan-right-one to null stream"))
+    (if (any stream-null? (map stream-cdr strms))
+        (stream (if (null? (cdr strms))
+                    (stream-car (car strms))
+                    (apply func (map stream-car strms))))
+        (let ((bases
+                 (apply stream-scan-right-one func (map stream-cdr strms))))
+            (stream-cons (apply func (stream-car bases) (map stream-car strms))
+                         bases))))
+
+;; PORT->STREAM reader [port] -- stream of objects returned by reader from port
+(stream-define (port->stream reader . port)
+    (let* ((p (if (null? port) (current-input-port) (car port)))
+           (obj (reader p)))
+        (if (eof-object? obj)
+            stream-null
+            (stream-cons obj (port->stream reader p)))))
+
+;; PORT->CHAR-STREAM [port] -- stream of characters on [current input] port
+(stream-define (port->char-stream . port)
+    (let ((p (if (null? port) (current-input-port) (car port))))
+        (port->stream read-char p)))
+
+;; PORT->WORD-STREAM [port] -- stream of words on [current input] port
+(stream-define (port->word-stream . port)
+    (letrec
+        ((read-word (lambda (port)
+            (let loop ((c (read-char port)) (word '()))
+                (cond ((eof-object? c)
+                          (if (null? word) c (list->string (reverse word))))
+                      ((char-alphabetic? c)
+                          (loop (read-char port) (cons c word)))
+                      ((null? word) (loop (read-char port) word))
+                      (else (list->string (reverse word))))))))
+        (let ((p (if (null? port) (current-input-port) (car port))))
+            (port->stream read-word p))))
+
+;; PORT->LINE-STREAM [port] -- stream of lines on [current input] port
+(stream-define (port->line-stream . port)
+    (letrec
+        ((read-line (lambda (port)
+            (let loop ((c (read-char port)) (line '()))
+                (cond ((eof-object? c)
+                          (if (null? line) c (list->string (reverse line))))
+                      ((char=? #\newline c) (list->string (reverse line)))
+                      (else (loop (read-char port) (cons c line))))))))
+        (let ((p (if (null? port) (current-input-port) (car port))))
+            (port->stream read-line p))))
+
+;; STREAM-DISPLAY stream [port] -- display stream on [current output] port
+(define (stream-display strm . port)
+    (let ((p (if (null? port) (current-output-port) (car port))))
+        (stream-for-each (lambda (x) (display x p)) strm)))
+
+;; STREAM-DISPLAY-LINES stream [port] -- display stream with newlines
+(define (stream-display-lines strm . port)
+    (let ((p (if (null? port) (current-output-port) (car port))))
+        (stream-for-each (lambda (x) (display x p) (newline p)) strm)))
+
+;; STREAM-WRITE stream [port] -- write stream on [current output] port
+(define (stream-write strm . port)
+    (let ((p (if (null? port) (current-output-port) (car port))))
+        (stream-for-each (lambda (x) (write x p)) s)))
+
+;; STREAM->LIST stream [n] -- new list containing [first n] elements of stream
+(define (stream->list strm . n)
+    (if (not (stream? strm))
+        (stream-error "attempt to convert non-stream to list"))
+    (let ((m (if (pair? n) (car n) -1)))
+        (if (not (integer? m))
+            (stream-error "non-integral stream->list length")
+            (let loop ((strm strm) (m m))
+                (if (or (zero? m) (stream-null? strm))
+                    '()
+                    (cons (stream-car strm)
+                          (loop (stream-cdr strm) (- m 1))))))))
+
+;; STREAM->VECTOR stream [n] -- vector containing [first n] elements of stream
+(define (stream->vector strm . n)
+    (if (not (stream? strm))
+        (stream-error "attempt to convert non-stream to vector"))
+    (if (pair? n)
+        (list->vector (stream->list strm (car n)))
+        (list->vector (stream->list strm))))
+
+;; STREAM->STRING stream [n] -- string with [first n] characters of stream
+(define (stream->string strm . n)
+    (if (not (stream? strm))
+        (stream-error "attempt to convert non-stream to string"))
+    (if (pair? n)
+        (list->string (stream->list strm (car n)))
+        (list->string (stream->list strm))))
+
+;; STREAM-APPEND stream ... -- append one or more streams end to end
+(stream-define (stream-append . strms)
+    (if (not (all stream? strms))
+        (stream-error "attempt to append non-stream"))
+    (let outer-loop ((s stream-null) (strms strms))
+        (if (null? strms)
+            s
+            (let inner-loop ((s s))
+                (if (stream-null? s)
+                    (outer-loop (car strms) (cdr strms))
+                    (stream-cons (stream-car s)
+                                 (inner-loop (stream-cdr s))))))))
+
+;; STREAM-CONCAT stream -- append a stream of streams into a single stream
+(define (stream-concat strm)
+    (apply stream-append (stream->list strm)))
+
+;; STREAM-REVERSE stream -- new stream with elements of stream in reverse order
+(stream-define (stream-reverse strm)
+    (if (not (stream? strm))
+        (stream-error "attempt to reverse non-stream"))
+    (let reverse ((s strm) (r stream-null))
+        (if (stream-null? s)
+            r
+            (reverse (stream-cdr s) (stream-cons (stream-car s) r)))))
+
+;; STREAM-ZIP stream ... -- convert multiple streams to stream of lists
+(stream-define (stream-zip . strms)
+    (if (null? strms)
+        (stream-error "stream-zip applied to null arguments")
+        (if (any stream-null? strms)
+            stream-null
+            (stream-cons
+                (apply list (map stream-car strms))
+                (apply stream-zip (map stream-cdr strms))))))
+
+;; STREAM-UNZIP stream -- convert stream of lists to multiple streams
+(define (stream-unzip strm)
+    (if (or (null? strm)
+            (stream-null? (stream-car strm))
+            (null? (stream-car strm)))
+        (stream-error "stream-unzip applied to null arguments")
+        (apply values
+            (let unzip ((strm strm))
+                (if (null? (stream-car strm))
+                    '()
+                    (cons (stream-map car strm)
+                          (unzip (stream-map cdr strm))))))))
+
+;; STREAM-MERGE lt? stream ... -- stably merge multiple streams by less-than
+(stream-define (stream-merge lt? . strms)
+    (cond ((null? strms) stream-null)
+          ((null? (cdr strms)) (car strms))
+          ((any stream-null? strms)
+              (apply stream-merge (cons lt?
+                  (let loop ((strms strms) (result '()))
+                      (cond ((null? strms) (reverse result))
+                            ((stream-null? (car strms)) (loop (cdr strms) result))
+                            (else (loop (cdr strms) (cons (car strms) result))))))))
+          (else (let loop ((unexamined (cdr strms))
+                           (min (stream-car (car strms)))
+                           (minstrm (car strms))
+                           (beforemin '())
+                           (aftermin '()))
+                     (cond ((null? unexamined) ; end of list
+                               (stream-cons min
+                                   (apply stream-merge
+                                       (cons lt?
+                                           (append beforemin
+                                                   (list (stream-cdr minstrm))
+                                                   aftermin)))))
+                           ((lt? (stream-car (car unexamined)) min) ; new minimum
+                               (loop (cdr unexamined)
+                                     (stream-car (car unexamined))
+                                     (car unexamined)
+                                     (append beforemin (list minstrm) aftermin)
+                                     '()))
+                           (else ; same minimum
+                               (loop (cdr unexamined)
+                                     min
+                                     minstrm
+                                     beforemin
+                                     (append aftermin (list (car unexamined))))))))))
+
+;; STREAM-SORT lt? stream -- newly-allocated stream ordered by lt?
+;  smooth applicative merge sort due to Richard O'Keefe via Larry Paulson
+(define (stream-merge-pairs lt? list-of-runs k)
+    (if (or (null? (cdr list-of-runs)) (odd? k))
+        list-of-runs
+        (stream-merge-pairs lt?
+            (cons (stream-merge lt?
+                      (car list-of-runs)
+                      (cadr list-of-runs))
+                  (cddr list-of-runs))
+            (/ k 2))))
+(define (stream-next-run lt? run strm)
+    (if (or (stream-null? strm)
+            (lt? (stream-car strm) (stream-car run)))
+       (list (stream-reverse run) strm)
+       (stream-next-run lt? (stream-cons (stream-car strm) run)
+                            (stream-cdr strm))))
+(stream-define (stream-sorting lt? strm list-of-runs k)
+    (if (stream-null? strm)
+        (car (stream-merge-pairs lt? list-of-runs 0))
+        (let* ((lsts
+                  (stream-next-run lt? (stream (stream-car strm)) (stream-cdr strm)))
+               (run (car lsts))
+               (tail (cadr lsts)))
+            (stream-sorting lt?
+               tail
+               (stream-merge-pairs lt? (cons run list-of-runs) (+ k 1))
+               (+ k 1)))))
+(stream-define (stream-sort lt? strm)
+    (if (stream-null? strm)
+        strm
+        (stream-sorting lt? strm '() 0)))
+
+;; STREAM-UNIQ eql? stream -- new stream with adjacent duplicates removed
+(stream-define (stream-uniq-aux eql? strm omit)
+  (if (stream-null? strm)
+      stream-null
+      (let ((first (stream-car strm)))
+	(if (eql? omit (stream-car strm))
+	    (stream-uniq-aux eql? (stream-cdr strm) omit)
+	    (stream-cons first
+			 (stream-uniq-aux eql? (stream-cdr strm) first))))))
+(stream-define (stream-uniq eql? strm)
+    (if (not (procedure? eql?))
+        (stream-error "non-functional argument to uniq"))
+    (if (not (stream? strm))
+        (stream-error "non-stream argument to uniq"))
+    (if (stream-null? strm)
+	stream-null
+	(let ((first (stream-car strm)))
+	  (stream-cons first
+		       (stream-uniq-aux eql? strm first)))))
+
+;; STREAM-ALTERNATE stream ... -- stream of items from streams in round-robin
+(stream-define (stream-alternate . strms)
+    (cond ((null? strms) stream-null)
+          ((stream-null? (car strms)) (apply stream-alternate (cdr strms)))
+          (else (stream-cons
+                    (stream-car (car strms))
+                    (apply stream-alternate
+                        (append (cdr strms)
+                                (list (stream-cdr (car strms)))))))))
+
+;; ALL pred? list -- #f if any (pred? list-item) is #f, or last pred?
+(define (all pred? lst)
+    (cond ((null? lst) #t)
+          ((null? (cdr lst)) (pred? (car lst)))
+          (else (and (pred? (car lst)) (all pred? (cdr lst))))))
+
+;; ANY pred? list -- first non-#f (pred? list-item), else #f
+(define (any pred? lst)
+    (cond ((null? lst) #f)
+          ((null? (cdr lst)) (pred? (car lst)))
+          (else (or (pred? (car lst)) (any pred? (cdr lst))))))
+
+
+
+ACKNOWLEDGEMENTS
+~~~~~~~~~~~~~~~~
+Thanks are due to:
+
+    David Rush for encouraging me to write this library.
+
+    Michael Sperber for teaching me the difference between even and odd, suggesting
+    stream-define, and patiently answering numerous questions; the entire library
+    was much enriched by our e-mail discussions.  Although he won't admit it, this
+    library is as much his as mine.
+
+    Al Petrofsky for providing early versions of the stream-unzip and stream-of
+    functions included in the reference implementation.
+
+    Richard Kelsey and Joe Marshall for providing early versions of the
+    stream-filter function.
+
+    Eli Barzilay for lessons in macrology.
+
+    All those who responded to my discussions of streams on comp.lang.scheme and
+    by private e-mail:  Eli Barzilay, Matthias Blume, Andrew Cady, George Caswell,
+    Dave Feuer, Brian Harvey, Richard Kelsey, Stephen McCracken, Joe Marshall, Al
+    Petrofsky, David Rush, Alex Shinn, Michael Sperber, Panagiotis Vossos, and
+    Noel Welsh.  My apologies to anyone I may have missed.
+
+    My daughters Anne and Kate, for tolerating my obsession during the months of
+    writing and defending this library.  It has been a far greater time sink than
+    I ever imagined, though also far more rewarding.
+
+
+
+COPYRIGHT
+~~~~~~~~~
+Copyright (C) 2003 by Philip L. Bewig of Saint Louis, Missouri, United States of
+America.  All rights reserved.
+
+This document and translations of it may be copied and furnished to others, and
+derivative works that comment on or otherwise explain it or assist in its
+implementation may be prepared, copied, published and distributed, in whole or
+in part, without restriction of any kind, provided that the above copyright notice
+and this paragraph are included on all such copies and derivative works.  However,
+this document itself may not be modified in any way, such as by removing this
+copyright notice or references to the Scheme Request for Implementation process or
+editors, except as needed for the purpose of developing SRFIs in which case the
+procedures for copyrights defined in the SRFI process must be followed, or as
+required to translate it into languages other than English.
+
+The limited permissions granted above are perpetual and will not be revoked by the
+authors or their successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS" basis
+and THE AUTHORS AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN
+WILL NOT INFRINGE ON ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR
+FITNESS FOR A PARTICULAR PURPOSE.

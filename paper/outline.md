@@ -23,6 +23,12 @@ those kinds of programs.
 ### Compare Deepcoder to mk for recursive programs
 ### Compare mk without vanilla search to mk with neural search
 
+### Possible programs
+Synthesize addition with Church numerials
+Synthesize multiplication with Church numerials
+Synthesize exponentiation with Church numerials
+Synthesize predecessor function with Church numerials
+
 ### Use mk with Neural search to recover larger programs
 #### Demonstrate mk doing differential synthesis: lex and dyn in icfp 2017 pearl, or CBV vs CBN
 #### Train on both type inferencer and evaluator, and show that the combination avoids generate and test

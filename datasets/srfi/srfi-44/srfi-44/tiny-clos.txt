@@ -1,0 +1,25 @@
+This reference implementation requires Tiny-CLOS version 1.7, which is freely
+available from <ftp://parcftp.xerox.com/pub/mops/tiny/>, with the following
+modifications:
+
+  - change (load "support") in tiny-clos.scm to whatever your implementation's
+    module system uses, or, if there be no module system, add a .scm file
+    extension
+  - change WHAT-SCHEME-IMPLEMENATION to the name of your implementation, and
+    add a clause to GSORT if your implementation do not already exist there
+  - change (set! %instance? (lambda (x) (not (null? (get-vector x))))) to
+    (set! %instance? (lambda (x) (and (get-vector x) #t)))
+  - if you use Scheme48 or scsh, instead of opening the BIG-SCHEME structure
+    like support.scm suggests, you need only to open the SORT structure; but
+    you need also to flip the arguments to SORT-LIST in the definition of GSORT
+  - if you use PLT, evaluate (require (lib "list.ss")) add a clause to GSORT:
+      ((plt) (lambda (predicate list) (quicksort list predicate)))
+  - this does -NOT- work with Swindle, or CHICKEN's slight modification of
+    Tiny-CLOS, as it both redefines CLASS-OF to something incompatible with
+    both Swindle's and CHICKEN's, and requires %INSTANCE? and %INSTANCE-CLASS
+    in its redefinition of CLASS-OF -- though it may be possible to hack up
+    Swindle or CHICKEN's Tiny-CLOS themselves so that their collection
+    hierarchy and CLASS-OF are both correct
+
+There are comments in all of the reference implementation files stating what
+their dependencies are.

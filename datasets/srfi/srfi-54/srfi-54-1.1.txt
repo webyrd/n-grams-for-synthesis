@@ -1,0 +1,247 @@
+Title
+
+Formatting
+
+Author
+
+Joo ChurlSoo
+
+Abstract
+
+This SRFI introduces the FMT procedure that converts any object to a string.
+Unlike the procedure called FORMAT, this FMT procedure takes one object as the
+first argument and accepts several optional arguments.
+
+Rationale
+
+The FMT procedure provides a handy optional and functional interface.
+
+Specification
+
+(FMT <number> [[<width>] [<depth>] [<char>] [<radix>] [<plus>] [<exactness>]])
+(FMT <others> [[<width>] [<count>] [<char>] [<show>]]) 
+
+     * <number> is any numeric expression.
+     * <others> are any expressions except number.
+     * <width> is an exact integer whose absolute value specifies the width of
+       the resulting string.  When the resulting string has fewer characters
+       than the absolute value of <width>, it is padded with <char>s, either
+       on the left if <width> is positive, or on the right if <width> is
+       negative.  On the other hand, when the resulting string has more
+       characters than the absolute value of <width>, the <width> is ignored.
+     * <depth> is a non-negative exact integer that specifies the number of
+       decimal digits after decimal point.
+     * <count> is a non-negative exact integer that specifies the number of
+       characters of the resulting string.
+     * <char> is a padding character.
+     * <radix> is a symbol: b (binary), d (decimal), o (octal), x (hexadecimal)
+     * <show> is a procedure: display, write
+     * If <plus> is a procedure + and <number> is a positive number without a
+       positive sign, the positive sign is prefixed to the <number>.
+     * <exactness> is a symbol: e (exact), i (inexact)
+
+The order of optional arguments is ignored except that <depth> or <count> can
+be defined only after <width> is defined.
+       
+Examples
+
+(fmt 129.995 10 2)			"    130.00"
+(fmt 129.995 -10 2)			"130.00    "
+(fmt 129.995  10 #\0 2)			"0000130.00"
+(fmt 129.995 #\0 10 + 2)		"+000130.00"
+(fmt 129.995  #\0 10 + 2 'o 'e)		error
+(fmt 129.995  #\0 10 + 'o 'e)		"+000000202"
+(fmt (sqrt -5) 10)			"0.0+2.23606797749979i"
+(fmt (sqrt -5) 10 2)			"0.00+2.24i"
+(fmt 3.14159e12 10 2 +)			"  +3.14e12"
+(fmt #x123 'o 10)			"       443"
+(fmt #x123 -10 3 + #\*)			"+291.000**"
+(fmt "string"  10)			"    string"
+(fmt "string"  -10 write)		"\"string\"  "
+(fmt "string" 10 3)			"       str"
+(fmt "string" -10 3)			"str       "
+(fmt "string" #\- -10 3)		"str-------"
+(fmt #\a write)				"#\\a"
+(fmt #\a display)			"a"
+(fmt #\a 10)				"         a"
+(fmt 'symbol 10)			"    symbol"
+(fmt '(1 #\a "str" sym '(a)) write)	"(1 #\\a \"str\" sym (quote (a)))"
+(fmt '(1 #\a "str" sym '(a)))		"(1 a str sym (quote (a)))"
+(fmt '(1 #\a "str" sym '(a)) 10)	"(1 a str sym (quote (a)))"
+(fmt '(1 #\a "str" sym '(a)) 10 10)	"(1 a str s"
+(fmt #(1 #\a "str" sym '(a)) 10)	"#(1 a str sym (quote (a)))"
+(fmt #(1 #\a "str" sym '(a)) 10 write)	"#(1 #\\a \"str\" sym (quote (a)))"
+
+Implementation
+
+The implementation below requires SRFI-6 (Basic string ports), SRFI-8
+(Receive), SRFI-13 (String library), and SRFI-23 (Error reporting mechanism).
+
+(define (opt-values rest-list . default-list)
+  (let loop ((rest-list rest-list)
+	     (default-list default-list)
+	     (result '()))
+    (if (null? default-list)
+	(if (null? rest-list)
+	    (apply values (reverse result))
+	    (error "fmt: bad argument" rest-list `(null? ,rest-list)))
+	(let ((default (car default-list)))
+	  (if (or (list? default)
+		  (and (pair? default) (procedure? (cdr default))))
+	      (let lp ((rest rest-list)
+		       (head '()))
+		(if (null? rest)
+		    (loop (reverse head)
+			  (cdr default-list)
+			  (cons (car default) result))
+		    (if (list? default)
+			(if (member (car rest) default)
+			    (loop (append (reverse head) (cdr rest))
+				  (cdr default-list)
+				  (cons (car rest) result))
+			    (lp (cdr rest) (cons (car rest) head)))
+			(if ((cdr default) (car rest))
+			    (loop (append (reverse head) (cdr rest))
+				  (cdr default-list)
+				  (cons (car rest) result))
+			    (lp (cdr rest) (cons (car rest) head))))))
+	      (error "fmt: bad default" default))))))
+
+(define (fmt expr . rest)
+  (if (number? expr)
+      (receive (width depth char radix plus exactness)
+	  (opt-values rest
+		      (cons #f number?) (cons #f number?) (cons #f char?)
+		      (list 'd 'b 'o 'x)
+		      (cons #f (lambda (x) (eq? x +)))
+		      (cons #f (lambda (x) (memq x '(e i)))))
+	(and (memq radix '(b o x))
+	     (or depth
+		 (and (inexact? expr) (not (eq? exactness 'e)))
+		 (eq? exactness 'i))
+	     (error "fmt: non-decimal cannot be inexact" radix 'radix))
+	(and depth (eq? exactness 'e)
+	     (error "fmt: exact number cannot have a decimal point"
+		    depth 'depth))
+	(and char (not width)
+	     (error "fmt: unnecessary padding character" char 'char))
+	(let* ((width (or width 0))
+	       (char (or char #\space))
+	       (sign (if (< width 0) '- '+))
+	       (str (number->string
+		     (if exactness
+			 (if (eq? exactness 'e)
+			     (if (inexact? expr) (inexact->exact expr) expr)
+			     (if (exact? expr) (exact->inexact expr) expr))
+			 expr)
+		     (cdr (assq radix '((b . 2) (d . 10) (o . 8) (x . 16))))))
+	       (str
+		(if depth
+		    (let ((e-index (or (string-index str #\e)
+				       (string-index str #\E)))
+			  (+-index (string-index str #\+ 1)))
+		      (define (mold str dep)
+			(let ((len (string-length str))
+			      (index (string-index str #\.)))
+			  (if index
+			      (let ((d-len (- len index 1)))
+				(if (<= d-len dep)
+				    (string-append str
+						   (make-string (- dep d-len)
+								#\0))
+				    (mold (number->string
+					   (+ (string->number
+					       (substring str 0
+							  (+ (if (= dep 0) 0 1)
+							     index dep)))
+					      (if (< 4 (string->number
+							(string
+							 (string-ref
+							  str
+							  (+ 1 index dep)))))
+						  (expt 0.1 dep) 0)))
+					  dep)))
+			      (string-append str "." (make-string dep #\0)))))
+		      (cond
+		       (e-index
+			(string-append (mold (substring str 0 e-index) depth)
+				       (substring str e-index
+						  (string-length str))))
+		       (+-index
+			(string-append (mold (substring str 0 +-index) depth)
+				       "+"
+				       (mold (substring str (+ 1 +-index)
+							(- (string-length str)
+							   1)) depth)
+				       (string (string-ref
+						str
+						(- (string-length str) 1)))))
+		       (else
+			(mold str depth))))
+		    str))
+	       (str (if (and (< 0 (real-part expr))
+			     (not (eq? #\+ (string-ref str 0)))
+			     plus)
+			(string-append "+" str)
+			str))
+	       (len (string-length str))
+	       (pad (- (abs width) len)))
+	  (cond
+	   ((<= pad 0) str)
+	   ((eq? sign '+)
+	    (if (and (not (eqv? char #\space))
+		     (or (eqv? #\+ (string-ref str 0))
+			 (eqv? #\- (string-ref str 0))))
+		(string-append (string (string-ref str 0))
+			       (make-string pad char)
+			       (substring str 1 len))
+		(string-append (make-string pad char) str)))
+	   (else
+	    (string-append str (make-string pad char))))))
+      (receive (width depth char show)
+	  (opt-values rest
+		      (cons #f number?) (cons #f number?) (cons #f char?)
+		      (list display write))
+	(and char (not width)
+	     (error "fmt: unnecessary padding character" char 'char))
+	(let* ((width (or width 0))
+	       (char (or char #\space))
+	       (sign (if (< width 0) '- '+))
+	       (str (get-output-string
+		     (let ((str-port (open-output-string)))
+		       (show expr str-port)
+		       str-port)))
+	       (str (if (and depth (< depth (string-length str)))
+			(substring str 0 depth)
+			str))
+	       (pad (- (abs width) (string-length str))))
+	  (cond
+	   ((<= pad 0) str)
+	   ((eq? sign '+) (string-append (make-string pad char) str))
+	   (else (string-append str (make-string pad char))))))))
+
+
+Copyright
+
+Copyright (C) Joo ChurlSoo (2004). All Rights Reserved.
+
+This document and translations of it may be copied and furnished to others, and
+derivative works that comment on or otherwise explain it or assist in its
+implementation may be prepared, copied, published and distributed, in whole or
+in part, without restriction of any kind, provided that the above copyright
+notice and this paragraph are included on all such copies and derivative works.
+However, this document itself may not be modified in any way, such as by
+removing the copyright notice or references to the Scheme Request For
+Implementation process or editors, except as needed for the purpose of
+developing SRFIs in which case the procedures for copyrights defined in the
+SRFI process must be followed, or as required to translate it into languages
+other than English.
+
+The limited permissions granted above are perpetual and will not be revoked by
+the authors or their successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS"
+basis and THE AUTHOR AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.

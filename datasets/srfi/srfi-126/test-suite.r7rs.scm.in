@@ -1,0 +1,8 @@
+(import
+ (scheme base)
+ (scheme write)
+ (srfi 1)
+ (srfi 64)
+ (srfi 126))
+
+;; INCLUDE test-suite.body.scm

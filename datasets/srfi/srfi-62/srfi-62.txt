@@ -1,0 +1,227 @@
+-- Title --
+
+S-expression comments
+
+-- Author --
+
+Taylor Campbell
+
+-- Abstract --
+
+This SRFI proposes a simple extension to Scheme's lexical syntax that
+allows individual S-expressions to be made into comments, ignored by
+the reader.  This contrasts with the standard Lisp semicolon comments,
+which make the reader ignore the remainder of the line, and the
+slightly less common block comments, as SRFI 30 defines: both of these
+mechanisms comment out sequences of text, not S-expressions.
+
+-- Rationale --
+
+Line & block comments are useful for embedding textual commentary in
+programs, but they are practically useless and bothersome without very
+complicated editor support for removing selected S-expressions while
+retaining them in text, or subsequently removing the comments and re-
+introducing the S-expressions themselves.
+
+-- Informal specification --
+
+A new octothorpe reader syntax character is defined, #\;, such that the
+reader ignores the next S-expression following it.  An S-expression is
+defined for the purposes of this SRFI as a full expression that READ
+may return.  For example,
+
+  (+ 1 #;(* 2 3) 4)    =reads=> (+ 1 4)          =evals=> 5
+  (LIST 'X #;'Y 'Z)    =reads=> (LIST (QUOTE X) (QUOTE Z))
+                         =evals=> (X Z)
+  (* 3 4 #;(+ 1 2))    =reads=> (* 3 4)          =evals=> 12
+  (#;SQRT ABS -16)     =reads=> (ABS -16)        =evals=> 16
+
+Some examples of seemingly nested S-expression comments may appear to
+be confusing at first, but they are straightforwardly explained.  For
+instance, consider the text (LIST 'X #; #; 'Y 'Z).  This reads as the
+list represented as (LIST (QUOTE X)).  Note that both 'Y and 'Z seemed
+to 'disappear.'  The reason is simply that, when the first #; reads
+ahead in the input stream for the next S-expression, the reader
+encounters another #;, which consumes & ignores the 'Y, and is then
+forced to proceed on to the 'Z to find a complete S-expression for the
+first #; to receive; this, too, is ignored, leaving only the closing
+parenthesis in the stream, which results in (LIST (QUOTE X)).
+
+That is a fairly special case of nested S-expression comments.  Others
+are somewhat simpler for intuition to grasp immediately:
+
+  (LIST 'A #;(LIST 'B #;'C 'D) 'E)
+    =reads=> (LIST (QUOTE A) (QUOTE E))
+    =evals=> (A E)
+
+There are also some other somewhat peculiar examples, such as in dotted
+lists:
+
+  '(A . #;B C)         =reads=> (QUOTE (A . C))  =evals=> (A . C)
+  '(A . B #;C)         =reads=> (QUOTE (A . B))  =evals=> (A . B)
+
+These examples require little explanation: since #;B & #;C are both
+ignored as whitespace, the two strings must be considered equivalent to
+'(A . C) & '(A . B), respectively.
+
+Note, however, that any text that is invalid without S-expression
+comments will be invalid with them as well, and S-expression comments
+must be followed by complete S-expressions; for instance, the following
+are all errors:
+
+  (#;A . B)
+  (A . #;B)
+  (A #;. B)
+  (#; #; X Y . Z)
+  (#; #; X . Z)
+
+-- Formal specification --
+
+R5RS's formal syntax is modified as follows:
+
+  - In section 7.1.1, the names <token>, <identifier>, <variable>,
+    <boolean>, <character>, <string>, & <number> are given a prefix of
+    'raw'; that is, <raw token>, <raw identifier>, &c.  Also, an option
+    is added to the newly named <raw token>:
+      <raw token> ---> ... | #;
+
+  - In section 7.1.2, the rule
+      <commented datum> ---> #; <datum>
+    is added, and, for every X in {token, identifier, variable,
+    boolean, character, string, number}, the following rule is added:
+      <X> ---> <commented datum>* <raw X>
+
+Additionally, all of the tokens in section 7.1.2 through 7.1.5 that
+referred to <token>, <identifier>, &c., now refer to the new <token>,
+<identifier>, &c., as introduced in section 7.1.2, not those that were
+previously defined in section 7.1.1 & now have the names <raw token>,
+<raw identifier>, &c.
+
+All of the new or modified rules are presented here:
+
+  7.1.1:
+
+  <raw token> ---> <raw identifier> | <raw boolean> | <raw number>
+    | <raw character> | <raw string> | ( | ) | #( | ' | ` | , | ,@ | .
+    | #;
+  <raw identifier> ---> <initial> <subsequent>* | <peculiar identifier>
+  <raw variable> ---> <any <raw identifier> that isn't also a
+                        <syntactic keyword>>
+  <raw boolean> ---> #t | #f
+  <raw character> ---> #\ <any character> | #\ <character name>
+  <raw string> ---> " <string element>* "
+  <raw number> ---> <num 2> | <num 8> | <num 10> | <num 16>
+
+  7.1.2:
+
+  <commented datum> ---> #; <datum>
+  <token> ---> <commented datum>* <raw token>
+  <identifier> ---> <commented datum>* <raw identifier>
+  <variable> ---> <commented datum>* <raw variable>
+  <boolean> ---> <commented datum>* <raw boolean>
+  <character> ---> <commented datum>* <raw character>
+  <string> ---> <commented datum>* <raw string>
+  <number> ---> <commented datum>* <raw number>
+
+Commented data are then ignored by the semantics.
+
+-- Design questions --
+
+Why not use a COMMENT macro?
+
+  A COMMENT macro works only in Scheme code where it is defined.  It
+  could not, for example, work in quoted S-expressions the same way
+  that the #; syntax does, although it could serve a different purpose.
+  Furthermore, though such a macro would seem trivial, it is impossible
+  for macros to expand to fewer or more than one output expression: a
+  COMMENT macro would need to expand to exactly one expression, which
+  would be meaningless and useless in many contexts.  For example, the
+  above examples would not work with this definition of COMMENT:
+
+    (define-syntax comment
+      (syntax-rules ()
+        ((comment expression)
+         'comment)))
+
+    (+ 1 (comment (* 2 3)) 4)           error: COMMENT is not a number
+    (list 'x (comment 'y) 'z)           => (X COMMENT Z)
+
+  Moreover, a COMMENT macro would also, like a #,(COMMENT <expression>)
+  SRFI 10 constructor (see below), require an added parenthesis at the
+  end of the commented S-expression.
+
+Why not use a SRFI 10 #,(...) constructor?
+
+  If there were a SRFI 10 constructor #,(COMMENT <exp>), one would need
+  to not only add the initial characters but also find the end of the
+  S-expression and append a closing parenthesis.  While this could be
+  performed by an editor, it is a tedious & dreary task that serves no
+  useful purpose other than to permit re-use of the octothorpe reader
+  syntax character for semicolons.
+
+Why #; in specific?
+
+  This syntax is already in wide use, and it is sufficiently close to
+  the existing semicolon syntax for its meaning, a comment syntax, to
+  be obvious, yet the octothorpe adds enough of a mark to distinguish
+  it from the existing line comment syntax.
+
+-- Implementation --
+
+Though there is no portable manner by which to extend Scheme's reader,
+the #; syntax is trivial to implement.  The procedure associated with
+the #\; octothorpe reader syntax character could simply first call READ
+to consume the following S-expression and subsequently call an internal
+procedure that reads either the following S-expression or a delimiting
+token, such as a closing parenthesis.
+
+As an example, here is an implementation of this SRFI for Scheme48's
+simple reader.  The DEFINE-SHARP-MACRO procedure defines an octothorpe
+reader syntax character.  When the reader sees an octothorpe followed
+by a character, it applies the procedure associated with that character
+to the character and the port being read from.  (The first argument is
+due to the way that Scheme48's reader reads numbers & identifiers.)
+SUB-READ is a procedure like READ, except that, if it meets a closing
+parenthesis or a dot, it returns the a token indicating that the outer
+call to READ should terminate the list or read the dotted tail of the
+list.  (This permits, for instance, (FOO BAR #;BAZ) to work: it is
+equivalent to just (FOO BAR).)  SUB-READ-CAREFULLY is like SUB-READ,
+but it signals an error if it read a token.
+
+  (define-sharp-macro #\;
+    (lambda (char port)
+      (read-char port)     ; The octothorpe reader leaves the semicolon
+                           ;   in the input stream, so we consume it.
+      (sub-read-carefully port)
+      (sub-read port)))
+
+The reader, for completeness, is in s48-read.scm.  That file uses some
+non-standard procedures, most of which are mentioned at the top of the
+file.  Those that are not mentioned are (INPUT-PORT-OPTION list), which
+returns the car of LIST if it is non-empty or the current input port if
+it is; and (WARN message irritant ...), which signals a warning with
+the given message & irritants.
+
+-- Copyright --
+
+Copyright (C) 2004 Taylor Campbell.  All rights reserved.
+
+This document and translations of it may be copied and furnished to others, and
+derivative works that comment on or otherwise explain it or assist in its
+implementation may be prepared, copied, published and distributed, in whole or
+in part, without restriction of any kind, provided that the above copyright notice
+and this paragraph are included on all such copies and derivative works.  However,
+this document itself may not be modified in any way, such as by removing this
+copyright notice or references to the Scheme Request for Implementation process or
+editors, except as needed for the purpose of developing SRFIs in which case the
+procedures for copyrights defined in the SRFI process must be followed, or as
+required to translate it into languages other than English.
+
+The limited permissions granted above are perpetual and will not be revoked by the
+authors or their successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS" basis
+and THE AUTHORS AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN
+WILL NOT INFRINGE ON ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR
+FITNESS FOR A PARTICULAR PURPOSE.
