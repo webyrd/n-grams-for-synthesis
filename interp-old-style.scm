@@ -1,3 +1,7 @@
+;; This version uses expert hand-ordering of clauses (combination of expert knowledge
+
+
+
 ;; The definition of 'letrec' is based based on Dan Friedman's code,
 ;; using the "half-closure" approach from Reynold's definitional
 ;; interpreters.
