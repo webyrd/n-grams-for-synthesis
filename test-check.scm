@@ -55,9 +55,15 @@
   (lambda (res)
     (pmatch res
       [(,status ,title ,tested-expression ,expected ,produced ,stats)
-       (when (not (eqv? 'success status))
-         (display "!! "))
-       (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])))
+       (case status
+         [(success)
+          (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))]
+         [(failure)
+          (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))
+          (printf "!!   expected: ~s\n" expected)
+          (printf "!!   produced: ~s\n" produced)]
+         [(timeout)
+          (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])])))
 
 (define time->inexact-seconds
   (lambda (time)
