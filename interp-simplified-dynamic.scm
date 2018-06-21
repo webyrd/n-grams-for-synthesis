@@ -44,22 +44,22 @@
   (fresh (rator x* rands body env^ a* res)
     (== `(,rator . ,rands) expr)
     ;; Multi-argument
-    (eval-expo rator env `(closure (lambda ,x* ,body) ,env^))
-    (eval-listo rands env a*)
+    (eval-expo rator env `(closure (lambda ,x* ,body) ,env^) 'app-rator)
+    (eval-randso rands env a*)
     (ext-env*o x* a* env^ res)
-    (eval-expo body res val)))
+    (eval-expo body res val 'lambda)))
 
 (define (car-evalo expr env val)
   (fresh (e d)
     (== `(car ,e) expr)
     (=/= 'closure val)
-    (eval-expo e env `(,val . ,d))))
+    (eval-expo e env `(,val . ,d) 'car)))
 
 (define (cdr-evalo expr env val)
   (fresh (e a)
     (== `(cdr ,e) expr)
     (=/= 'closure a)
-    (eval-expo e env `(,a . ,val))))
+    (eval-expo e env `(,a . ,val) 'cdr)))
 
 (define (null?-evalo expr env val)
   (fresh (e v)
@@ -67,22 +67,22 @@
     (conde
       ((== '() v) (== #t val))
       ((=/= '() v) (== #f val)))
-    (eval-expo e env v)))
+    (eval-expo e env v 'null?)))
 
 (define (cons-evalo expr env val)
   (fresh (e1 e2 v1 v2)
     (== `(cons ,e1 ,e2) expr)
     (== `(,v1 . ,v2) val)
-    (eval-expo e1 env v1)
-    (eval-expo e2 env v2)))
+    (eval-expo e1 env v1 'cons-e1)
+    (eval-expo e2 env v2 'cons-e2)))
 
 (define (if-evalo expr env val)
   (fresh (e1 e2 e3 t)
     (== `(if ,e1 ,e2 ,e3) expr)
-    (eval-expo e1 env t)
+    (eval-expo e1 env t 'if-test)
     (conde
-      ((=/= #f t) (eval-expo e2 env val))
-      ((== #f t) (eval-expo e3 env val)))))
+      ((=/= #f t) (eval-expo e2 env val 'if-conseq))
+      ((== #f t) (eval-expo e3 env val 'if-alt)))))
 
 (define (equal?-evalo expr env val)
   (fresh (e1 e2 v1 v2)
@@ -90,8 +90,8 @@
     (conde
       ((== v1 v2) (== #t val))
       ((=/= v1 v2) (== #f val)))
-    (eval-expo e1 env v1)
-    (eval-expo e2 env v2)))
+    (eval-expo e1 env v1 'equal?-e1)
+    (eval-expo e2 env v2 'equal?-e2)))
 
 (define (and-evalo expr env val)
   (fresh (e*)
@@ -115,7 +115,7 @@
     (conde
       ((symbolo v) (== #t val))
       ((not-symbolo v) (== #f val)))
-    (eval-expo e env v)))
+    (eval-expo e env v 'symbol?)))
 
 (define (not-evalo expr env val)
   (fresh (e v)
@@ -123,7 +123,7 @@
     (conde
       ((=/= #f v) (== #f val))
       ((== #f v) (== #t val)))
-    (eval-expo e env v)))
+    (eval-expo e env v 'not)))
 
 (define (letrec-evalo expr env val)
   (fresh (p-name x body letrec-body)
@@ -134,7 +134,8 @@
     (list-of-symbolso x)
     (eval-expo letrec-body
                `((,p-name . (rec . (lambda ,x ,body))) . ,env)
-               val)))
+               val
+               'letrec-body)))
 
 
 
@@ -151,6 +152,16 @@
       ((=/= x y)
        (lookupo x rest t)))))
 
+(define (eval-randso expr env val)
+  (conde
+    ((== '() expr)
+     (== '() val))
+    ((fresh (a d v-a v-d)
+       (== `(,a . ,d) expr)
+       (== `(,v-a . ,v-d) val)
+       (eval-expo a env v-a 'app-rand*)
+       (eval-randso d env v-d)))))
+
 (define (eval-listo expr env val)
   (conde
     ((== '() expr)
@@ -158,7 +169,7 @@
     ((fresh (a d v-a v-d)
        (== `(,a . ,d) expr)
        (== `(,v-a . ,v-d) val)
-       (eval-expo a env v-a)
+       (eval-expo a env v-a 'list)
        (eval-listo d env v-d)))))
 
 ;; need to make sure lambdas are well formed.
@@ -186,15 +197,15 @@
     ((== '() e*) (== #t val))
     ((fresh (e)
        (== `(,e) e*)
-       (eval-expo e env val)))
+       (eval-expo e env val 'and)))
     ((fresh (e1 e2 e-rest v)
        (== `(,e1 ,e2 . ,e-rest) e*)
        (conde
          ((== #f v)
           (== #f val)
-          (eval-expo e1 env v))
+          (eval-expo e1 env v 'and))
          ((=/= #f v)
-          (eval-expo e1 env v)
+          (eval-expo e1 env v 'and)
           (ando `(,e2 . ,e-rest) env val)))))))
 
 (define (oro e* env val)
@@ -202,15 +213,15 @@
     ((== '() e*) (== #f val))
     ((fresh (e)
        (== `(,e) e*)
-       (eval-expo e env val)))
+       (eval-expo e env val 'or)))
     ((fresh (e1 e2 e-rest v)
        (== `(,e1 ,e2 . ,e-rest) e*)
        (conde
          ((=/= #f v)
           (== v val)
-          (eval-expo e1 env v))
+          (eval-expo e1 env v 'or))
          ((== #f v)
-          (eval-expo e1 env v)
+          (eval-expo e1 env v 'or)
           (oro `(,e2 . ,e-rest) env val)))))))
 
 
@@ -221,7 +232,7 @@
   (lambda  (expr env val)
     (fresh (against-expr mval clause clauses)
       (== `(match ,against-expr ,clause . ,clauses) expr)
-      (eval-expo against-expr env mval)
+      (eval-expo against-expr env mval 'match-against)
       (match-clauses mval `(,clause . ,clauses) env val))))
 
 (define (not-symbolo t)
@@ -274,7 +285,7 @@
       ((fresh (env^)
          (p-match p mval '() penv)
          (regular-env-appendo penv env env^)
-         (eval-expo result-expr env^ val)))
+         (eval-expo result-expr env^ val 'match-body)))
       ((p-no-match p mval '() penv)
        (match-clauses mval d env val)))))
 
@@ -389,7 +400,7 @@
 (define empty-env '())
 
 (define (evalo expr val)
-  (eval-expo expr empty-env val))
+  (eval-expo expr empty-env val 'top-level))
 
 (define (alist-ref alist element failure-result)
   (let ([pr (assoc element alist)])
@@ -456,20 +467,49 @@
     (cond
       [(assoc context orderings-alist) => cdr]
       [else
-        (error 'eval-expo "bad context")])))
+        ;(error 'eval-expo (string-append "bad context " (symbol->string context)))
+
+        ; symbol? doesn't appear in the data, so we'll return the expert ordering
+        ; for such cases.
+        expert-ordering])))
 
 (define (eval-expo expr env val context)
+  ; for debugging build-and-run-code
+
+  ;(conde
+    ;((quote-evalo expr env val))
+    ;((num-evalo expr env val))
+    ;((bool-evalo expr env val))
+    ;((var-evalo expr env val))
+    ;((lambda-evalo expr env val))
+    ;((app-evalo expr env val))
+    ;((car-evalo expr env val))
+    ;((cdr-evalo expr env val))
+    ;((null?-evalo expr env val))
+    ;((cons-evalo expr env val))
+    ;((if-evalo expr env val))
+    ;((equal?-evalo expr env val))
+    ;((and-evalo expr env val))
+    ;((or-evalo expr env val))
+    ;((list-evalo expr env val))
+    ;((symbol?-evalo expr env val))
+    ;((not-evalo expr env val))
+    ;((letrec-evalo expr env val))
+    ;((match-evalo expr env val)))
+
   (build-and-run-conde expr env val
-                       ;(order-eval-relations context)
-                       expert-ordering
+                       (order-eval-relations context)
+                       ;expert-ordering
                        ))
 
 (define build-and-run-conde
   (lambda (expr env val list-of-eval-relations)
-    (lambda (st)
-      (let loop ([list-of-eval-relations list-of-eval-relations])
-        (cond
-          [(null? list-of-eval-relations) (mzero)]
-          [else
-            (mplus (((car list-of-eval-relations) expr env val) st)
-                   (inc (loop (cdr list-of-eval-relations))))])))))
+    (lambdag@ (st)
+              (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
+                         (lambdag@ (st)
+                                   (let loop ([list-of-eval-relations list-of-eval-relations])
+                                     (cond
+                                       [(null? list-of-eval-relations) (mzero)]
+                                       [else
+                                         (mplus (((car list-of-eval-relations) expr env val) st)
+                                                (inc (loop (cdr list-of-eval-relations))))]))))))))
