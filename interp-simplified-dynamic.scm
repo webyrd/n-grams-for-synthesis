@@ -388,27 +388,25 @@
 
 (define empty-env '())
 
-
-
-
-
 (define (evalo expr val)
   (eval-expo expr empty-env val))
 
-(define statistics
+(define (alist-ref alist element failure-result)
+  (let ([pr (assoc element alist)])
+    (if pr (cdr pr) failure-result)))
+
+(define ngrams-statistics
   (let ((op (open-file-input-port
              "statistics.scm"
              (file-options no-fail)
              (buffer-mode block)
              (make-transcoder (utf-8-codec)))))
-    (printf "~s\n" (read op))
-    (close-input-port op)))
+    (let ([res (read op)])
+      (close-input-port op)
+      res)))
 
-;; returns a function: context->list-of-eval-relations
-(define order-eval-relations
-  (order-clauses
-   statistics
-   `((quote . ,quote-evalo)
+(define expert-ordering-alist
+  `((quote . ,quote-evalo)
      (num . ,num-evalo)
      (bool . ,bool-evalo)
      (var . ,var-evalo)
@@ -426,31 +424,52 @@
      (symbol? . ,symbol?-evalo)
      (not . ,not-evalo)
      (letrec . ,letrec-evalo)
-     (match . ,match-evalo))))
+     (match . ,match-evalo)))
 
-(define order-clauses
-  (lambda (statistics expert-ordering-alist)
-    generate list of all contexts (things like if-alt)
-    (foreach context
-       filter statistics, selecting only things where the caar of the statistics match that context
-       sort those  [probably already pre-sorted]
-       sort expert ordering using a stable sort, according to that data we got from the filter)
-    ))
+(define expert-ordering
+  (map cdr expert-ordering-alist))
 
-;; want order-clauses to return a function equivalent in behavior to:
-(lambda (context)
-  (assoc context
-         `((if-alt . (,cdr-evalo ,symbol?-evalo ,if-evalo ...))
-           ...
-           )))
+(define unique
+  (lambda (l)
+    (if (null? l)
+      '()
+      (cons (car l) (remove (car l) (unique (cdr l)))))))
 
+(define all-contexts (unique (map caar ngrams-statistics)))
 
+(define orderings-alist
+  (let ([ordering-for-context
+          (lambda (ctx)
+            (let ([ctx-stats (map (lambda (entry) (cons (cadar entry) (cdr entry)))
+                                  (filter (lambda (entry) (equal? ctx (caar entry))) ngrams-statistics))])
+              (let ([compare
+                      (lambda (a b)
+                        (> (alist-ref ctx-stats (car a) 0)
+                           (alist-ref ctx-stats (car b) 0)))])
+                (map cdr (list-sort compare expert-ordering-alist)))))])
+    (map (lambda (ctx)
+           (cons ctx (ordering-for-context ctx)))
+         all-contexts)))
+
+(define order-eval-relations
+  (lambda (context)
+    (cond
+      [(assoc context orderings-alist) => cdr]
+      [else
+        (error 'eval-expo "bad context")])))
 
 (define (eval-expo expr env val context)
-  (build-and-run-conde expr env val (order-eval-relations context)))
+  (build-and-run-conde expr env val
+                       ;(order-eval-relations context)
+                       expert-ordering
+                       ))
 
-(define foo
-  (lambda (list-of-eval-relations)
-    (cond
-      [(null? list-of-eval-relations) fail]
-      [else ])))
+(define build-and-run-conde
+  (lambda (expr env val list-of-eval-relations)
+    (lambda (st)
+      (let loop ([list-of-eval-relations list-of-eval-relations])
+        (cond
+          [(null? list-of-eval-relations) (mzero)]
+          [else
+            (mplus (((car list-of-eval-relations) expr env val) st)
+                   (inc (loop (cdr list-of-eval-relations))))])))))
