@@ -48,7 +48,10 @@
                  ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))
                 ;;
                 (('(a b c))
-                 (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))))))   
+                 (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))
+                ;;
+                (((cdr '(_.0 a b c)) (absento (closure _.0) (prim _.0)))
+                 ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))))))   
         #t)
 
  (test "append-3"
@@ -159,19 +162,25 @@
    #t)
 
  (test "append-11"
-        (run 4 (q)
-          (evalo
-           `(letrec ((append
-                      (lambda (l s)
-                        (if ,q
-                            s
-                            (cons (car l) (append (cdr l) s))))))
-              (append '(a b c) '(d e)))
-           '(a b c d e)))
-        '(((null? l))
-          (((lambda () (null? l))))
-          ((null? ((lambda () l))))
-          ((equal? '() l))))
+        (andmap
+          (lambda (res)
+            (not (not (member res
+                              '(((null? l))
+                                (((lambda () (null? l))))
+                                ((null? ((lambda () l))))
+                                ((equal? '() l))
+                                ((and (null? l)))
+                                ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0))))))))
+          (run 4 (q)
+               (evalo
+                 `(letrec ((append
+                             (lambda (l s)
+                               (if ,q
+                                 s
+                                 (cons (car l) (append (cdr l) s))))))
+                    (append '(a b c) '(d e)))
+                 '(a b c d e))))
+        #t)
 
 ;; slooow--didnt complete in 30 seconds
 
@@ -190,7 +199,7 @@
                             (cons (car l) (append (cdr l) s))))))
               (append '(a b c) '(d e)))
            '(a b c d e)))
-        '(((null? l) s)))
+        '((((null? l) s))))
 
  (test "append-13"
         (run 1 (q r)
@@ -213,7 +222,7 @@
            '(()
              (a b)
              (c d e f))))
-        '(((null? l) s)))
+        '((((null? l) s))))
 
  (test "append-14"
         (run 1 (q r s)
@@ -236,7 +245,7 @@
            '(()
              (a b)
              (c d e f))))
-        '(((null? l) s cons)))
+        '((((null? l) s cons))))
 
 ;; and tests
  (test "and-0"
