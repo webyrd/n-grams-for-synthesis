@@ -36,12 +36,13 @@
                        [(eqv? x defn-name) (list 'var parent)]
                        [(memv x args) (list 'var parent)]
                        [else (list 'var parent)]))]
+                  ; because our interpreter doesn't support define, code as letrec
                   [(define ,id ,e) (guard (symbol? id))
-                   (cons (list 'define parent) (bigrams-for-expr e 'define id args))]
+                   (cons (list 'letrec parent) (bigrams-for-expr e 'letrec-rhs id args))]
                   [(lambda ,x ,body)
                    (cons (list 'lambda parent)
                          (bigrams-for-expr body
-                                           (if (symbol? x) 'lambda-variadic 'lambda-multi)
+                                           'lambda
                                            defn-name
                                            (if (symbol? x) (list x) x)))]
                   [(if ,test ,conseq ,alt)
