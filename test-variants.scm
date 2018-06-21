@@ -1,9 +1,10 @@
 ;; Run benchmarks for different interpreters
 
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-simplified.scm simplified-interp-tests.scm")
 
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-old-style.scm simplified-interp-tests.scm")
-
 
 
 #|
