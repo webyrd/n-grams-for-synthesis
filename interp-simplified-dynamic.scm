@@ -403,7 +403,7 @@
   (eval-expo expr empty-env val 'top-level))
 
 (define (alist-ref alist element failure-result)
-  (let ([pr (assoc element alist)])
+  (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
 
 (define ngrams-statistics
@@ -412,7 +412,7 @@
              (file-options no-fail)
              (buffer-mode block)
              (make-transcoder (utf-8-codec)))))
-    (let ([res (read op)])
+    (let ((res (read op)))
       (close-input-port op)
       res)))
 
@@ -449,15 +449,15 @@
 (define all-contexts (unique (map caar ngrams-statistics)))
 
 (define orderings-alist
-  (let ([ordering-for-context
+  (let ((ordering-for-context
           (lambda (ctx)
-            (let ([ctx-stats (map (lambda (entry) (cons (cadar entry) (cdr entry)))
-                                  (filter (lambda (entry) (equal? ctx (caar entry))) ngrams-statistics))])
-              (let ([compare
+            (let ((ctx-stats (map (lambda (entry) (cons (cadar entry) (cdr entry)))
+                                  (filter (lambda (entry) (equal? ctx (caar entry))) ngrams-statistics))))
+              (let ((compare
                       (lambda (a b)
                         (> (alist-ref ctx-stats (car a) 0)
-                           (alist-ref ctx-stats (car b) 0)))])
-                (map cdr (list-sort compare expert-ordering-alist)))))])
+                           (alist-ref ctx-stats (car b) 0)))))
+                (map cdr (list-sort compare expert-ordering-alist)))))))
     (map (lambda (ctx)
            (cons ctx (ordering-for-context ctx)))
          all-contexts)))
@@ -465,13 +465,13 @@
 (define order-eval-relations
   (lambda (context)
     (cond
-      [(assoc context orderings-alist) => cdr]
-      [else
+      ((assoc context orderings-alist) => cdr)
+      (else
         ;(error 'eval-expo (string-append "bad context " (symbol->string context)))
 
         ; symbol? doesn't appear in the data, so we'll return the expert ordering
         ; for such cases.
-        expert-ordering])))
+        expert-ordering))))
 
 (define (eval-expo expr env val context)
   ; for debugging build-and-run-code
@@ -507,9 +507,9 @@
     (lambdag@ (st)
               (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
                          (lambdag@ (st)
-                                   (let loop ([list-of-eval-relations list-of-eval-relations])
+                                   (let loop ((list-of-eval-relations list-of-eval-relations))
                                      (cond
-                                       [(null? list-of-eval-relations) (mzero)]
-                                       [else
+                                       ((null? list-of-eval-relations) (mzero))
+                                       (else
                                          (mplus (((car list-of-eval-relations) expr env val) st)
-                                                (inc (loop (cdr list-of-eval-relations))))]))))))))
+                                                (inc (loop (cdr list-of-eval-relations)))))))))))))
