@@ -1,9 +1,12 @@
 ;; Run benchmarks for different interpreters
 
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+(printf "===== dynamic ordering\n")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
 
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-simplified.scm simplified-interp-tests.scm")
+(printf "===== expert ordering\n")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm interp-expert.scm simplified-interp-tests.scm")
 
+(printf "===== old skool\n")
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-old-style.scm simplified-interp-tests.scm")
 
 (exit)
