@@ -406,6 +406,9 @@
   (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
 
+;; ngrams-statistics structure:
+;;
+;; (((context form) . count) ...)
 (define ngrams-statistics
   (let ((op (open-file-input-port
              "statistics.scm"
@@ -418,24 +421,24 @@
 
 (define expert-ordering-alist
   `((quote . ,quote-evalo)
-     (num . ,num-evalo)
-     (bool . ,bool-evalo)
-     (var . ,var-evalo)
-     (lambda . ,lambda-evalo)
-     (app . ,app-evalo)
-     (car . ,car-evalo)
-     (cdr . ,cdr-evalo)
-     (null? . ,null?-evalo)
-     (cons . ,cons-evalo)
-     (if . ,if-evalo)
-     (equal? . ,equal?-evalo)
-     (and . ,and-evalo)
-     (or . ,or-evalo)
-     (list . ,list-evalo)
-     (symbol? . ,symbol?-evalo)
-     (not . ,not-evalo)
-     (letrec . ,letrec-evalo)
-     (match . ,match-evalo)))
+    (num . ,num-evalo)
+    (bool . ,bool-evalo)
+    (var . ,var-evalo)
+    (lambda . ,lambda-evalo)
+    (app . ,app-evalo)
+    (car . ,car-evalo)
+    (cdr . ,cdr-evalo)
+    (null? . ,null?-evalo)
+    (cons . ,cons-evalo)
+    (if . ,if-evalo)
+    (equal? . ,equal?-evalo)
+    (and . ,and-evalo)
+    (or . ,or-evalo)
+    (list . ,list-evalo)
+    (symbol? . ,symbol?-evalo)
+    (not . ,not-evalo)
+    (letrec . ,letrec-evalo)
+    (match . ,match-evalo)))
 
 (define expert-ordering
   (map cdr expert-ordering-alist))
@@ -448,11 +451,21 @@
 
 (define all-contexts (unique (map caar ngrams-statistics)))
 
+;; orderings-alist structure:
+;;
+;; ((context . (eval-relation ...)) ...)
 (define orderings-alist
   (let ((ordering-for-context
           (lambda (ctx)
             (let ((ctx-stats (map (lambda (entry) (cons (cadar entry) (cdr entry)))
                                   (filter (lambda (entry) (equal? ctx (caar entry))) ngrams-statistics))))
+              ;; ctx-stats has the structure:
+              ;;
+              ;; ((form . count) ...)
+              ;;
+              ;; For example,
+              ;;
+              ;; ((app . 33) ...)
               (let ((compare
                       (lambda (a b)
                         (> (alist-ref ctx-stats (car a) 0)
@@ -462,6 +475,7 @@
            (cons ctx (ordering-for-context ctx)))
          all-contexts)))
 
+;; context -> list of eval-relations
 (define order-eval-relations
   (lambda (context)
     (cond
@@ -505,11 +519,11 @@
 (define build-and-run-conde
   (lambda (expr env val list-of-eval-relations)
     (lambdag@ (st)
-              (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
-                         (lambdag@ (st)
-                                   (let loop ((list-of-eval-relations list-of-eval-relations))
-                                     (cond
-                                       ((null? list-of-eval-relations) (mzero))
-                                       (else
-                                         (mplus (((car list-of-eval-relations) expr env val) st)
-                                                (inc (loop (cdr list-of-eval-relations)))))))))))))
+      (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
+                 (lambdag@ (st)
+                   (let loop ((list-of-eval-relations list-of-eval-relations))
+                     (cond
+                       ((null? list-of-eval-relations) (mzero))
+                       (else
+                        (mplus (((car list-of-eval-relations) expr env val) st)
+                               (inc (loop (cdr list-of-eval-relations)))))))))))))
