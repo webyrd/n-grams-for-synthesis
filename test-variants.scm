@@ -1,10 +1,16 @@
 ;; Run benchmarks for different interpreters
 
+(printf "===== dynamic ordering with application optimization\n")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+
+(printf "===== expert ordering with application optimization\n")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-expert.scm simplified-interp-tests.scm")
+
 (printf "===== dynamic ordering\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
 
 (printf "===== expert ordering\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm interp-expert.scm simplified-interp-tests.scm")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm construct-ordering.scm interp-expert.scm simplified-interp-tests.scm")
 
 (printf "===== old skool\n")
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-old-style.scm simplified-interp-tests.scm")
