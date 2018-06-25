@@ -5,10 +5,35 @@
 
 (test-runner
  ;; timeout in seconds
- 5
- 
+ 5 
 
-;; and tests
+(test "quote-and-shadowing-works-1"
+  (run* (q)
+    (evalo
+     `(letrec ((append
+                (lambda (l s)
+                  (if ((lambda (x) (x #f)) (lambda (y) (quote z)))
+                      s
+                      (cons (car l) (append (cdr l) s))))))
+        (append '(a b c) '(d e)))
+     q))
+  '(((d e))))
+
+(test "quote-and-shadowing-works-2"
+  (run* (q)
+    (evalo
+     `(letrec ((append
+                (lambda (l s)
+                  (if ((lambda (quote) (quote #f)) (lambda (y) (quote z)))
+                      s
+                      (cons (car l) (append (cdr l) s))))))
+        (append '(a b c) '(d e)))
+     q))
+  '(((d e))))
+
+
+
+ ;; and tests
  (test "and-0"
         (run* (q) (evalo '(and) q))
         '((#t)))
@@ -549,25 +574,30 @@
    #t)
 
  (test "append-11"
-        (andmap
-          (lambda (res)
-            (not (not (member res
-                              '(((null? l))
-                                (((lambda () (null? l))))
-                                ((null? ((lambda () l))))
-                                ((equal? '() l))
-                                ((and (null? l)))
-                                ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0))))))))
-          (run 4 (q)
-               (evalo
-                 `(letrec ((append
+   (andmap
+     (lambda (res)
+       (not (not (member res
+                         '(((null? l))
+                           (((lambda () (null? l))))
+                           ((null? ((lambda () l))))
+                           ((equal? '() l))
+                           ((and (null? l)))
+                           ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0))))
+
+                         ))))
+    (let ((res (run 4 (q)
+                 (evalo
+                  `(letrec ((append
                              (lambda (l s)
                                (if ,q
-                                 s
-                                 (cons (car l) (append (cdr l) s))))))
-                    (append '(a b c) '(d e)))
-                 '(a b c d e))))
-        #t)
+                                   s
+                                   (cons (car l) (append (cdr l) s))))))
+                     (append '(a b c) '(d e)))
+                  '(a b c d e)))))
+      (printf "generated:\n")
+      (printf "~s\n" res)
+      res))
+ #t)
 
 ;; slooow--didnt complete in 30 seconds
 
