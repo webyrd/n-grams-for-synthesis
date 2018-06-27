@@ -12,7 +12,7 @@
     (evalo
      `(letrec ((append
                 (lambda (l s)
-                  (if ((lambda (x) (x #f)) (lambda (y) (quote z)))
+                  (if ((lambda (x) (x #f)) (lambda (y) (quote #t)))
                       s
                       (cons (car l) (append (cdr l) s))))))
         (append '(a b c) '(d e)))
@@ -24,7 +24,7 @@
     (evalo
      `(letrec ((append
                 (lambda (l s)
-                  (if ((lambda (quote) (quote #f)) (lambda (y) (quote z)))
+                  (if ((lambda (quote) (quote #f)) (lambda (y) (quote #t)))
                       s
                       (cons (car l) (append (cdr l) s))))))
         (append '(a b c) '(d e)))
@@ -55,6 +55,22 @@
                             [`(,quote)
                              5])
                          q))
+        (if *restricted-semantics?*
+            '()
+            '((5))))
+
+
+ ;; if tests
+ (test "if-0"
+        (run* (q) (evalo '(if #t 5 6) q))
+        '((5)))
+
+ (test "if-1"
+        (run* (q) (evalo '(if #f 5 6) q))
+        '((6)))
+
+ (test "if-2"
+        (run* (q) (evalo '(if 4 5 6) q))
         (if *restricted-semantics?*
             '()
             '((5))))

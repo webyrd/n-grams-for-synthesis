@@ -70,7 +70,7 @@
     (== `(if ,e1 ,e2 ,e3) expr)
     (eval-expo e1 env t 'if-test)
     (conde
-      ((=/= #f t) (eval-expo e2 env val 'if-conseq))
+      ((== #t t) (eval-expo e2 env val 'if-conseq))
       ((== #f t) (eval-expo e3 env val 'if-alt)))))
 
 (define (equal?-evalo expr env val)
