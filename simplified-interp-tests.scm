@@ -29,9 +29,9 @@
                       (cons (car l) (append (cdr l) s))))))
         (append '(a b c) '(d e)))
      q))
-  (if *restricted-semantics?*
-      '()
-      '(((d e)))))
+  (if *primitives-first-class-and-shadowable?*
+      '(((d e)))
+      '()))
 
 
 
@@ -55,9 +55,9 @@
                             [`(,quote)
                              5])
                          q))
-        (if *restricted-semantics?*
-            '()
-            '((5))))
+        (if *primitives-first-class-and-shadowable?*
+            '((5))
+            '()))
 
 
  ;; if tests
@@ -71,7 +71,7 @@
 
  (test "if-2"
         (run* (q) (evalo '(if 4 5 6) q))
-        (if *restricted-semantics?*
+        (if *if-test-requires-boolean?*
             '()
             '((5))))
 
@@ -625,7 +625,10 @@
                            ((null? ((lambda () l))))
                            ((equal? '() l))
                            ((and (null? l)))
-                           ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0))))
+                           ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0)))
+                           ((if '#t (null? l) _.0))
+                           ((if '#f _.0 (null? l)))
+                           ((if #t (null? l) _.0)))
 
                          ))))
     (let ((res (run 4 (q)

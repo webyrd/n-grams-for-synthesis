@@ -3,6 +3,9 @@
 (printf "===== dynamic ordering with application optimization\n")
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
 
+(printf "===== Barliman interpreter\n")
+(system "scheme mk-vicare.scm mk.scm test-check.scm interp-barliman.scm simplified-interp-tests.scm")
+
 (printf "===== expert ordering with application optimization\n")
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-expert.scm simplified-interp-tests.scm")
 

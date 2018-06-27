@@ -1,4 +1,5 @@
-(define *restricted-semantics?* #t)
+(define *primitives-first-class-and-shadowable?* #f)
+(define *if-test-requires-boolean?* #t)
 
 
 

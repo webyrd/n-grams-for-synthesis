@@ -4,7 +4,9 @@
 ;; using the "half-closure" approach from Reynold's definitional
 ;; interpreters.
 
-(define *restricted-semantics?* #f)
+
+(define *primitives-first-class-and-shadowable?* #t)
+(define *if-test-requires-boolean?* #f)
 
 
 (define (evalo expr val)
