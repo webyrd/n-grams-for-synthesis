@@ -29,8 +29,35 @@
                       (cons (car l) (append (cdr l) s))))))
         (append '(a b c) '(d e)))
      q))
-  '(((d e))))
+  (if *restricted-semantics?*
+      '()
+      '(((d e)))))
 
+
+
+ ;; match tests
+ (test "match-0"
+        (run* (q) (evalo '(match '(1 2 3 1 2)
+                            [`(,x ,y ,z ,x ,y)
+                             (list x y)])
+                         q))
+        '(((1 2))))
+
+ (test "match-1"
+        (run* (q) (evalo '(match '(1 2 3 2 1)
+                            [`(,x ,y ,z ,x ,y)
+                             (list x y)])
+                         q))
+        '())
+
+ (test "match-2"
+        (run* (q) (evalo '(match '(1)
+                            [`(,quote)
+                             5])
+                         q))
+        (if *restricted-semantics?*
+            '()
+            '((5))))
 
 
  ;; and tests
@@ -594,8 +621,6 @@
                                    (cons (car l) (append (cdr l) s))))))
                      (append '(a b c) '(d e)))
                   '(a b c d e)))))
-      (printf "generated:\n")
-      (printf "~s\n" res)
       res))
  #t)
 
@@ -898,10 +923,127 @@
                             (if (null? l) s
                                 (cons (car l)
                                       (append (cdr l) s))))))
-                  (letrec ((reverse
-                            (lambda (xs)
-                              (if (null? xs) '()
-                                  (,q (reverse ,r) ,s)))))
+                  (letrec ((reverse ,defn))
+                    (list
+                     (reverse '())
+                     (reverse '(,g1))
+                     (reverse '(,g2 ,g3))
+                     (reverse '(,g4 ,g5 ,g6)))))
+               (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
+  '(((append (cdr xs) (cons (car xs) '())))))
+
+(test 'reverse-20
+  (run 1 (q r s t)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (defn)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (== `(lambda (xs)
+               (if (null? xs)
+                   '()
+                   (,q (,r ,s) ,t)))
+            defn)
+        
+        ;;(== 'append q)
+        ;;(== '(cdr xs) r)
+        ;;(== '(cons (car xs) '()) s)
+        (evalo `(letrec ((append
+                          (lambda (l s)
+                            (if (null? l) s
+                                (cons (car l)
+                                      (append (cdr l) s))))))
+                  (letrec ((reverse ,defn))
+                    (list
+                     (reverse '())
+                     (reverse '(,g1))
+                     (reverse '(,g2 ,g3))
+                     (reverse '(,g4 ,g5 ,g6)))))
+               (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
+  '(((append (cdr xs) (cons (car xs) '())))))
+
+(test 'reverse-30
+  (run 1 (q r s)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (defn)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (== `(lambda (xs)
+               (if (null? xs)
+                   '()
+                   (,q ,r ,s)))
+            defn)
+        
+        ;;(== 'append q)
+        ;;(== '(cdr xs) r)
+        ;;(== '(cons (car xs) '()) s)
+        (evalo `(letrec ((append
+                          (lambda (l s)
+                            (if (null? l) s
+                                (cons (car l)
+                                      (append (cdr l) s))))))
+                  (letrec ((reverse ,defn))
+                    (list
+                     (reverse '())
+                     (reverse '(,g1))
+                     (reverse '(,g2 ,g3))
+                     (reverse '(,g4 ,g5 ,g6)))))
+               (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
+  '(((append (cdr xs) (cons (car xs) '())))))
+
+(test 'reverse-40
+  (run 1 (q)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (defn)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (== `(lambda (xs)
+               (if (null? xs)
+                   '()
+                   ,q))
+            defn)
+        
+        ;;(== 'append q)
+        ;;(== '(cdr xs) r)
+        ;;(== '(cons (car xs) '()) s)
+        (evalo `(letrec ((append
+                          (lambda (l s)
+                            (if (null? l) s
+                                (cons (car l)
+                                      (append (cdr l) s))))))
+                  (letrec ((reverse ,defn))
                     (list
                      (reverse '())
                      (reverse '(,g1))

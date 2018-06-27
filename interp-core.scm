@@ -1,3 +1,7 @@
+(define *restricted-semantics?* #t)
+
+
+
 (define (quote-evalo expr env val)
   (fresh ()
     (== `(quote ,val) expr)
@@ -175,7 +179,26 @@
        (== `(,a . ,da*) a*)
        (== `((,x . (val . ,a)) . ,env) env2)
        (symbolo x)
+       (not-built-ino x)
        (ext-env*o dx* da* env2 out)))))
+
+(define (not-built-ino x)
+  (fresh ()
+    (=/= 'quote x)
+    (=/= 'lambda x)
+    (=/= 'car x)
+    (=/= 'cdr x)
+    (=/= 'null? x)
+    (=/= 'cons x)
+    (=/= 'if x)
+    (=/= 'equal? x)
+    (=/= 'and x)
+    (=/= 'or x)
+    (=/= 'list x)
+    (=/= 'symbol? x)
+    (=/= 'not x)
+    (=/= 'letrec x)
+    (=/= 'match x)))
 
 (define (ando e* env val)
   (conde
@@ -291,7 +314,8 @@
        (== penv penv-out)
        (lookupo var penv val))
       ((== `((,var . (val . ,mval)) . ,penv) penv-out)
-       (not-in-envo var penv)))))
+       (not-in-envo var penv)
+       (not-built-ino var)))))
 
 (define (var-p-no-match var mval penv penv-out)
   (fresh (val)
