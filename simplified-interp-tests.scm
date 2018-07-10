@@ -7,6 +7,7 @@
  ;; timeout in seconds
  5 
 
+
 (test "quote-and-shadowing-works-1"
   (run* (q)
     (evalo
@@ -488,26 +489,25 @@
            q))
         '(((a b c d e))))
 
- (test "append-2"
-   (not (not (member
-              (run 2 (q)
-                (evalo
-                 `(letrec ((append
-                            (lambda (l s)
-                              (if (null? l)
-                                  s
-                                  (cons (car l) (append (cdr l) s))))))
-                    (append ,q '(d e)))
-                 '(a b c d e)))
-              '((('(a b c))
-                 ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))
-                ;;
-                (('(a b c))
-                 (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))
-                ;;
-                (((cdr '(_.0 a b c)) (absento (closure _.0) (prim _.0)))
-                 ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))))))   
-        #t)
+ (test-p "append-2"
+   (run 2 (q)
+     (evalo
+      `(letrec ((append
+                 (lambda (l s)
+                   (if (null? l)
+                       s
+                       (cons (car l) (append (cdr l) s))))))
+         (append ,q '(d e)))
+      '(a b c d e)))
+   (one-of?
+     '((('(a b c))
+        ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))
+       ;;
+       (('(a b c))
+        (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))
+       ;;
+       (((cdr '(_.0 a b c)) (absento (closure _.0) (prim _.0)))
+        ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0)))))))
 
  (test "append-3"
         (run* (q)
@@ -600,48 +600,41 @@
            '(a b c d e)))
         '(((cdr l))))
 
- (test "append-10"
-   (not (not (member
-              (run 1 (q)
-                (evalo
-                 `(letrec ((append
-                            (lambda (l s)
-                              (if ,q
-                                  s
-                                  (cons (car l) (append (cdr l) s))))))
-                    (append '(a b c) '(d e)))
-                 '(a b c d e)))
-              '((((null? l)))
-                ;;
-                (((equal? l (quote ()))))))))
-   #t)
+ (test-p "append-10"
+   (run 1 (q)
+     (evalo
+      `(letrec ((append
+                 (lambda (l s)
+                   (if ,q
+                       s
+                       (cons (car l) (append (cdr l) s))))))
+         (append '(a b c) '(d e)))
+      '(a b c d e)))
+   (one-of?
+    '((((null? l)))
+      ;;
+      (((equal? l (quote ())))))))
 
- (test "append-11"
-   (andmap
-     (lambda (res)
-       (not (not (member res
-                         '(((null? l))
-                           (((lambda () (null? l))))
-                           ((null? ((lambda () l))))
-                           ((equal? '() l))
-                           ((and (null? l)))
-                           ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0)))
-                           ((if '#t (null? l) _.0))
-                           ((if '#f _.0 (null? l)))
-                           ((if #t (null? l) _.0)))
-
-                         ))))
-    (let ((res (run 4 (q)
-                 (evalo
-                  `(letrec ((append
-                             (lambda (l s)
-                               (if ,q
-                                   s
-                                   (cons (car l) (append (cdr l) s))))))
-                     (append '(a b c) '(d e)))
-                  '(a b c d e)))))
-      res))
- #t)
+ (test-p "append-11"
+   (run 4 (q)
+     (evalo
+      `(letrec ((append
+                 (lambda (l s)
+                   (if ,q
+                       s
+                       (cons (car l) (append (cdr l) s))))))
+         (append '(a b c) '(d e)))
+      '(a b c d e)))
+   (each-one-of? '(((null? l))
+                   (((lambda () (null? l))))
+                   ((null? ((lambda () l))))
+                   ((equal? '() l))
+                   ((and (null? l)))
+                   ((and (null? l) (quote _.0)) (=/= ((_.0 #f))) (absento (closure _.0) (prim _.0)))
+                   ((and (null? l) (quote #t)))
+                   ((if '#t (null? l) _.0))
+                   ((if '#f _.0 (null? l)))
+                   ((if #t (null? l) _.0)))))
 
 ;; slooow--didnt complete in 30 seconds
 
@@ -791,7 +784,7 @@
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))    
   '(((append (cdr xs) (cons (car xs) '())))))
 
-(test 'reverse-3
+(test-p 'reverse-3
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -829,9 +822,10 @@
                      (reverse '(,g2 ,g3))
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
-  '(((append (cdr xs) (cons (car xs) '())))))
+  (one-of? '((((append (cdr xs) (cons (car xs) '()))))
+             (((append (cdr xs) (list (car xs))))))))
 
-(test 'reverse-4
+(test-p 'reverse-4
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -868,10 +862,11 @@
                      (reverse '(,g1))
                      (reverse '(,g2 ,g3))
                      (reverse '(,g4 ,g5 ,g6)))))
-               (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))   
-  '(((append (cdr xs) (cons (car xs) '())))))
+               (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
+  (one-of? '((((append (cdr xs) (cons (car xs) '()))))
+             (((append (cdr xs) (list (car xs))))))))
 
-(test 'reverse-5
+(test-p 'reverse-5
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -909,9 +904,10 @@
                      (reverse '(,g2 ,g3))
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
-  '(((append (cdr xs) (cons (car xs) '())))))
+    (one-of? '((((append (cdr xs) (cons (car xs) '()))))
+               (((append (cdr xs) (list (car xs))))))))
 
-(test 'reverse-10
+(test-p 'reverse-10
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -949,7 +945,8 @@
                      (reverse '(,g2 ,g3))
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
-  '(((append (cdr xs) (cons (car xs) '())))))
+  (one-of? '((((append (cdr xs) (cons (car xs) '()))))
+             (((append (cdr xs) (list (car xs))))))))
 
 (test 'reverse-20
   (run 1 (q r s t)

@@ -1,19 +1,42 @@
 (load "pmatch.scm")
 
-(define-syntax test
+(define equal-to?
+  (lambda (expected)
+    (lambda (produced)
+      (equal? expected produced))))
+
+(define one-of?
+  (lambda (expected*)
+    (lambda (produced)
+      (not (not (member produced expected*))))))
+
+(define each-one-of?
+  (lambda (expected*)
+    (lambda (produced*)
+      (andmap
+        (lambda (produced)
+          (not (not (member produced expected*))))
+        produced*))))
+
+(define-syntax test-p
   (syntax-rules ()
-    ((_ title tested-expression expected-result)
+    ((_ title tested-expression pred-expr)
      (lambda (time-out-in-seconds)
-       (let ((expected expected-result))
+       (let ((pred pred-expr))
          (run-for-max-time time-out-in-seconds
                            (lambda () tested-expression)
                            (lambda (produced stats-diff)
-                             (let ((success-indicator (if (equal? expected produced)
+                             (let ((success-indicator (if (pred produced)
                                                           'success
                                                           'failure)))
-                               (list success-indicator title 'tested-expression expected produced stats-diff)))
+                               (list success-indicator title 'tested-expression 'pred-expr produced stats-diff)))
                            (lambda (stats-diff)
-                             (list 'timeout title 'tested-expression expected 'timeout stats-diff))))))))
+                             (list 'timeout title 'tested-expression 'pred-expr 'timeout stats-diff))))))))
+
+(define-syntax test
+  (syntax-rules ()
+    ((_ title tested-expression expected-result)
+     (test-p title tested-expression (equal-to? expected-result)))))
 
 (define run-for-max-time
   (lambda (max-time expr-th success-f timeout-f)
@@ -60,8 +83,8 @@
           (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))]
          [(failure)
           (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))
-          (printf "!!   expected: ~s\n" expected)
-          (printf "!!   produced: ~s\n" produced)]
+          (printf "!!   expected predicate: ~s\n" expected)
+          (printf "!!   produced value: ~s\n" produced)]
          [(timeout)
           (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])])))
 
@@ -69,4 +92,5 @@
   (lambda (time)
     (let ((s (time-second time))
           (ns (time-nanosecond time)))
-      (exact->inexact (+ s (/ ns (expt 10 9)))))))
+      (exact->inexact (+ s (/ ns (expt 10 9))))))) 
+
