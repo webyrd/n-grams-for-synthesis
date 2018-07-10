@@ -1,4 +1,5 @@
 (load "pmatch.scm")
+(load "prelude.scm")
 (load "corpus.scm")
 
 (define bigrams-for-expr
@@ -183,8 +184,6 @@
              (merge-entries bigrams-sorted-by-type/counts
                             cadr)))
 
-(let ((op (open-file-output-port "statistics.scm" (file-options no-fail) (buffer-mode block) (make-transcoder (utf-8-codec)))))
-    (write bigrams-sorted-by-type/counts op)
-    (close-output-port op))
+(write-data-to-file bigrams-sorted-by-type/counts "tmp/statistics.scm")
 
 (exit)

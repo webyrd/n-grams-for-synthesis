@@ -1,4 +1,5 @@
 (load "pmatch.scm")
+(load "prelude.scm")
 
 (define equal-to?
   (lambda (expected)
@@ -29,9 +30,9 @@
                              (let ((success-indicator (if (pred produced)
                                                           'success
                                                           'failure)))
-                               (list success-indicator title 'tested-expression 'pred-expr produced stats-diff)))
+                               (list success-indicator title 'tested-expression 'pred-expr produced (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))
                            (lambda (stats-diff)
-                             (list 'timeout title 'tested-expression 'pred-expr 'timeout stats-diff))))))))
+                             (list 'timeout title 'tested-expression 'pred-expr 'timeout (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff)))))))))
 
 (define-syntax test
   (syntax-rules ()
@@ -59,7 +60,8 @@
 
 (define test-runner
   (lambda (timeout . test*)
-    (test-runner-aux test* '() timeout print-test-result)))
+    (let ((table (test-runner-aux test* '() timeout print-test-result)))
+      (write-data-to-file table *output-table-file-name*))))
 
 (define test-runner-build-table
   (lambda (timeout . test*)
@@ -69,7 +71,7 @@
 (define test-runner-aux
   (lambda (tests acc timeout f)
     (cond
-      ((null? tests) acc)
+      ((null? tests) (reverse acc))
       (else (let ((res ((car tests) timeout)))
               (f res)
               (test-runner-aux (cdr tests) (cons res acc) timeout f))))))
@@ -77,16 +79,16 @@
 (define print-test-result
   (lambda (res)
     (pmatch res
-      [(,status ,title ,tested-expression ,expected ,produced ,stats)
+      [(,status ,title ,tested-expression ,expected ,produced ,stats-real ,stats-bytes)
        (case status
          [(success)
-          (printf "~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))]
+          (printf "~s ~s ~s ~s\n" status title stats-real stats-bytes)]
          [(failure)
-          (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))
+          (printf "!! ~s ~s ~s ~s\n" status title stats-real stats-bytes)
           (printf "!!   expected predicate: ~s\n" expected)
           (printf "!!   produced value: ~s\n" produced)]
          [(timeout)
-          (printf "!! ~s ~s ~s ~s\n" status title (time->inexact-seconds (sstats-real stats)) (sstats-bytes stats))])])))
+          (printf "!! ~s ~s ~s ~s\n" status title stats-real stats-bytes)])])))
 
 (define time->inexact-seconds
   (lambda (time)

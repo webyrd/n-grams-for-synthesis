@@ -1,15 +1,9 @@
+(load "prelude.scm")
+
 ;; ngrams-statistics structure:
 ;;
 ;; (((context form) . count) ...)
-(define ngrams-statistics
-  (let ((op (open-file-input-port
-             "statistics.scm"
-             (file-options no-fail)
-             (buffer-mode block)
-             (make-transcoder (utf-8-codec)))))
-    (let ((res (read op)))
-      (close-input-port op)
-      res)))
+(define ngrams-statistics (read-data-from-file "tmp/statistics.scm"))
 
 (define unique
   (lambda (l)

@@ -1,3 +1,15 @@
+(load "pmatch.scm")
+(load "prelude.scm")
+
+
+(unless (file-exists? "test-variants.scm")
+  (error 'test-variants "test-variants.scm doesn't exist--you are probably in the wrong folder"))
+
+
+(system "rm -rf tmp")
+(mkdir "tmp")
+
+
 ;; first, generate the statistics
 (printf "$$$$$$ generating statistics\n")
 (system "scheme n-grams.scm")
@@ -5,23 +17,51 @@
 
 ;; then, run benchmarks for different interpreters
 
-(printf "===== dynamic ordering with application optimization\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+(define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
+                          "variant-barliman-interpreter"))
 
-(printf "===== Barliman interpreter\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-barliman.scm simplified-interp-tests.scm")
+#|
+(define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
+                          "variant-barliman-interpreter"
+                          "variant-expert-ordering-with-application-optimization"
+                          "variant-dynamic-ordering"
+                          "variant-expert-ordering"
+                          "variant-old-skool"))
+|#
 
-(printf "===== expert ordering with application optimization\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-expert.scm simplified-interp-tests.scm")
 
-(printf "===== dynamic ordering\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")
+(for-each (lambda (v)
+            (printf "===== ~a\n" v)
+            (system (format "scheme ~a.scm" v)))
+          variants-to-run)
 
-(printf "===== expert ordering\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-core.scm construct-ordering.scm interp-expert.scm simplified-interp-tests.scm")
 
-(printf "===== old skool\n")
-(system "scheme mk-vicare.scm mk.scm test-check.scm interp-old-style.scm simplified-interp-tests.scm")
+(define variant-data-file (lambda (v) (format "tmp/~a-table.scm" v)))
+
+(define test-names (map cadr (read-data-from-file (variant-data-file (car variants-to-run)))))
+
+(define test-data (map (lambda (v)
+                         (let ((data (read-data-from-file (variant-data-file v))))
+                           (map (lambda (d)
+                                  (pmatch d
+                                    [(,status ,title ,tested-expression ,expected ,produced ,stats-real ,stats-bytes)
+                                     (case status
+                                       [(success) (number->string stats-real)]
+                                       [(failure) "FAIL"]
+                                       [(timeout) "TIME"])]))
+                                data)))
+                       variants-to-run))
+
+(define transpose
+  (lambda (l)
+    (let loop ((acc '())
+               (l l))
+      (cond
+        ((null? (car l)) (reverse acc))
+        (else (loop (cons (map car l) acc) (map cdr l)))))))
+
+(write-data-to-file (cons (cons "" variants-to-run) (transpose (cons test-names test-data))) "tmp/summary")
+
 
 (exit)
 
