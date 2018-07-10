@@ -823,7 +823,8 @@
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
   (one-of? '((((append (cdr xs) (cons (car xs) '()))))
-             (((append (cdr xs) (list (car xs))))))))
+             (((append (cdr xs) (list (car xs)))))
+             (((append (cdr xs) (cons (car xs) (list))))))))
 
 (test-p 'reverse-4
   (run 1 (q r s)
@@ -905,7 +906,8 @@
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
     (one-of? '((((append (cdr xs) (cons (car xs) '()))))
-               (((append (cdr xs) (list (car xs))))))))
+               (((append (cdr xs) (list (car xs)))))
+               (((append (cdr xs) (cons (car xs) (list))))))))
 
 (test-p 'reverse-10
   (run 1 (q r s)
