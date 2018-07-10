@@ -1,4 +1,9 @@
-;; Run benchmarks for different interpreters
+;; first, generate the statistics
+(printf "$$$$$$ generating statistics\n")
+(system "scheme n-grams.scm")
+
+
+;; then, run benchmarks for different interpreters
 
 (printf "===== dynamic ordering with application optimization\n")
 (system "scheme mk-vicare.scm mk.scm test-check.scm interp-app-optimization.scm construct-ordering.scm interp-simplified-dynamic.scm simplified-interp-tests.scm")

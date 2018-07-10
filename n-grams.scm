@@ -186,3 +186,5 @@
 (let ((op (open-file-output-port "statistics.scm" (file-options no-fail) (buffer-mode block) (make-transcoder (utf-8-codec)))))
     (write bigrams-sorted-by-type/counts op)
     (close-output-port op))
+
+(exit)
