@@ -4,8 +4,10 @@
 ; and substitutions will contain a scope. When a substitution flows through a
 ; conde it is assigned a new scope.
 
+;;; allow-incomplete-search flag moved to the individual variant files
+;;
 ;; To allow use of optimizations that sacrifice completeness, set this to #t.
-(define allow-incomplete-search? #f)
+;; (define allow-incomplete-search? #f)
 
 ;; To allow use of experimental `conde1` optimization, set this to #t.
 (define enable-conde1? #t)

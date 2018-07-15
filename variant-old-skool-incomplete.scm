@@ -1,6 +1,6 @@
-(define *output-table-file-name* "tmp/variant-old-skool-table.scm")
+(define *output-table-file-name* "tmp/variant-old-skool-incomplete-table.scm")
 
-(define allow-incomplete-search? #f)
+(define allow-incomplete-search? #t)
 
 (load "mk-vicare.scm")
 (load "mk.scm")

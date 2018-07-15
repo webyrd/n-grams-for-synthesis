@@ -1,6 +1,6 @@
-(define *output-table-file-name* "tmp/variant-barliman-interpreter-table.scm")
+(define *output-table-file-name* "tmp/variant-barliman-interpreter-incomplete-table.scm")
 
-(define allow-incomplete-search? #f)
+(define allow-incomplete-search? #t)
 
 (load "mk-vicare.scm")
 (load "mk.scm")
