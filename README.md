@@ -48,6 +48,7 @@ Possible additional optimizations to try:
 
 ** Tie together decisions about base cases and recursive cases
 
+** Take environment into account during learning
 
 
 OLD README TEXT
