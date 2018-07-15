@@ -50,6 +50,8 @@ Possible additional optimizations to try:
 
 ** Take environment into account during learning (for example, prefer variables that have been added recently)
 
+** Use learning to discover patterns of redundancy automatically/discover equivalence of forms
+
 
 OLD README TEXT
 

@@ -17,18 +17,13 @@
 
 ;; then, run benchmarks for different interpreters
 
-(define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
-                          "variant-barliman-interpreter"))
 
-#|
 (define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
                           "variant-barliman-interpreter"
                           "variant-expert-ordering-with-application-optimization"
                           "variant-dynamic-ordering"
                           "variant-expert-ordering"
                           "variant-old-skool"))
-|#
-
 
 (for-each (lambda (v)
             (printf "===== ~a\n" v)
@@ -60,7 +55,27 @@
         ((null? (car l)) (reverse acc))
         (else (loop (cons (map car l) acc) (map cdr l)))))))
 
-(write-data-to-file (cons (cons "" variants-to-run) (transpose (cons test-names test-data))) "tmp/summary")
+(define summary-scm (cons (cons "" variants-to-run) (transpose (cons test-names test-data))))
+
+(define to-csv
+  (lambda (summary)
+    (apply string-append
+           (map
+            (lambda (row)
+              (string-append
+               (apply string-append
+                      (map
+                       (lambda (entry)
+                         (string-append entry ", "))
+                       row))
+               "\n"))
+            summary))))
+
+(define summary-csv (to-csv summary-scm))
+
+(write-data-to-file summary-scm "tmp/summary.scm")
+
+(display-data-to-file summary-csv "tmp/summary.csv")
 
 
 (exit)

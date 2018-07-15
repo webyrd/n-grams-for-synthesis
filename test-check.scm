@@ -20,19 +20,20 @@
         produced*))))
 
 (define-syntax test-p
-  (syntax-rules ()
-    ((_ title tested-expression pred-expr)
-     (lambda (time-out-in-seconds)
-       (let ((pred pred-expr))
-         (run-for-max-time time-out-in-seconds
-                           (lambda () tested-expression)
-                           (lambda (produced stats-diff)
-                             (let ((success-indicator (if (pred produced)
-                                                          'success
-                                                          'failure)))
-                               (list success-indicator title 'tested-expression 'pred-expr produced (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))
-                           (lambda (stats-diff)
-                             (list 'timeout title 'tested-expression 'pred-expr 'timeout (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff)))))))))
+  (lambda (stx)    
+    (syntax-case stx ()
+      ((_ title tested-expression pred-expr) (string? (syntax->datum #'title))
+       #'(lambda (time-out-in-seconds)
+           (let ((pred pred-expr))
+             (run-for-max-time time-out-in-seconds
+                               (lambda () tested-expression)
+                               (lambda (produced stats-diff)
+                                 (let ((success-indicator (if (pred produced)
+                                                              'success
+                                                              'failure)))
+                                   (list success-indicator title 'tested-expression 'pred-expr produced (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))
+                               (lambda (stats-diff)
+                                 (list 'timeout title 'tested-expression 'pred-expr 'timeout (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))))))))
 
 (define-syntax test
   (syntax-rules ()

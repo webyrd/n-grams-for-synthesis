@@ -333,7 +333,7 @@
 ; symbol?
 ; not
 
-  (test 'stupor-test-1
+  (test "stupor-test-1"
     (run* (q)
       (evalo '(letrec ((assoc (lambda (x l)
                                  (if (null? l)
@@ -349,7 +349,7 @@
 
 ;; append
 
-  (test 'append-simple-1
+  (test "append-simple-1"
     (run* (q)
       (evalo '(letrec ((append (lambda (l s)
                                  (if (null? l)
@@ -361,7 +361,7 @@
     '(((1 2 3 4 5))))
 
 
-  (test 'append-simple-2
+  (test "append-simple-2"
     (run* (q)
       (evalo `(letrec ((append (lambda (l s)
                                  (if (null? l)
@@ -373,7 +373,7 @@
     '(((1 2 3))))
 
 
-  (test 'append-simple-3
+  (test "append-simple-3"
     (run* (x y)
       (evalo `(letrec ((append (lambda (l s)
                                  (if (null? l)
@@ -636,75 +636,229 @@
                    ((if '#f _.0 (null? l)))
                    ((if #t (null? l) _.0)))))
 
-;; slooow--didnt complete in 30 seconds
-
  (test "append-12"
-        (run 1 (q r)
-          (absento 'a r)
-          (absento 'b r)
-          (absento 'c r)
-          (absento 'd r)
-          (absento 'e r)
-          (evalo
-           `(letrec ((append
-                      (lambda (l s)
-                        (if ,q
-                            ,r
-                            (cons (car l) (append (cdr l) s))))))
-              (append '(a b c) '(d e)))
-           '(a b c d e)))
-        '((((null? l) s))))
+   (run 1 (prog)
+     (fresh (q r s)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (cons (car l) (append (cdr l) s))))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
 
  (test "append-13"
-        (run 1 (q r)
-          (absento 'a r)
-          (absento 'b r)
-          (absento 'c r)
-          (absento 'd r)
-          (absento 'e r)
-          (absento 'f r)
-          (evalo
-           `(letrec ((append
-                      (lambda (l s)
-                        (if ,q
-                            ,r
-                            (cons (car l) (append (cdr l) s))))))
-              (list
-               (append '() '())
-               (append '(a) '(b))
-               (append '(c d) '(e f))))
-           '(()
-             (a b)
-             (c d e f))))
-        '((((null? l) s))))
+   (run 1 (prog)
+     (fresh (q r s)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (cons (car l) (append (cdr l) s))))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
 
  (test "append-14"
-        (run 1 (q r s)
-          (absento 'a r)
-          (absento 'b r)
-          (absento 'c r)
-          (absento 'd r)
-          (absento 'e r)
-          (absento 'f r)
-          (evalo
-           `(letrec ((append
-                      (lambda (l s)
-                        (if ,q
-                            ,r
-                            (,s (car l) (append (cdr l) s))))))
-              (list
-               (append '() '())
-               (append '(a) '(b))
-               (append '(c d) '(e f))))
-           '(()
-             (a b)
-             (c d e f))))
-        '((((null? l) s cons))))
+   (run 1 (prog)
+     (fresh (q r s)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (,s (car l) (append (cdr l) s))))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
 
+ (test "append-15"
+   (run 1 (prog)
+     (fresh (q r s t)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (,s (car l) (append ,t s))))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+ (test "append-16"
+   (run 1 (prog)
+     (fresh (q r s t)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (,s (car l) ,t)))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+ (test "append-17"
+   (run 1 (prog)
+     (fresh (q r s)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  ,s))
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+ (test "append-18"
+   (run 1 (prog)
+     (fresh (q)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda (l s)
+              ,q)
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+ (test "append-19"
+   (run 1 (prog)
+     (fresh (q r)
+       (absento 'a prog)
+       (absento 'b prog)
+       (absento 'c prog)
+       (absento 'd prog)
+       (absento 'e prog)
+       (absento 'f prog)
+       (== `(lambda ,q
+              ,r)
+           prog)
+       (evalo
+        `(letrec ((append ,prog))
+           (list
+            (append '() '())
+            (append '(a) '(b))
+            (append '(c d) '(e f))))
+        '(()
+          (a b)
+          (c d e f)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
 
 ;; reverse tests
 
-(test 'reverse-1
+(test "reverse-1"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -744,7 +898,7 @@
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))    
   '(((append (cdr xs) (cons (car xs) '())))))
 
-(test 'reverse-2
+(test "reverse-2"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -784,7 +938,7 @@
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))    
   '(((append (cdr xs) (cons (car xs) '())))))
 
-(test-p 'reverse-3
+(test-p "reverse-3"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -826,7 +980,7 @@
              (((append (cdr xs) (list (car xs)))))
              (((append (cdr xs) (cons (car xs) (list))))))))
 
-(test-p 'reverse-4
+(test-p "reverse-4"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -867,7 +1021,7 @@
   (one-of? '((((append (cdr xs) (cons (car xs) '()))))
              (((append (cdr xs) (list (car xs))))))))
 
-(test-p 'reverse-5
+(test-p "reverse-5"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -909,7 +1063,7 @@
                (((append (cdr xs) (list (car xs)))))
                (((append (cdr xs) (cons (car xs) (list))))))))
 
-(test-p 'reverse-10
+(test-p "reverse-10"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -950,7 +1104,7 @@
   (one-of? '((((append (cdr xs) (cons (car xs) '()))))
              (((append (cdr xs) (list (car xs))))))))
 
-(test 'reverse-20
+(test "reverse-20"
   (run 1 (q r s t)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -990,7 +1144,7 @@
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
   '(((append (cdr xs) (cons (car xs) '())))))
 
-(test 'reverse-30
+(test "reverse-30"
   (run 1 (q r s)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -1030,7 +1184,7 @@
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
   '(((append (cdr xs) (cons (car xs) '())))))
 
-(test 'reverse-40
+(test "reverse-40"
   (run 1 (q)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
