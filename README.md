@@ -48,7 +48,7 @@ Possible additional optimizations to try:
 
 ** Tie together decisions about base cases and recursive cases
 
-** Take environment into account during learning
+** Take environment into account during learning (for example, prefer variables that have been added recently)
 
 
 OLD README TEXT
