@@ -40,7 +40,7 @@ Possible additional optimizations to try:
 
 ** Recursion schemas, like in Leon (also, try to learn recursion schemas) [can we learn this, if we contiue looking at only one branch at a time?]
 
-** Add standard helpers (fold, for example) to initial env
+** Related to recursion schemas, add standard helpers (maps, fold, for example) to initial env
 
 ** Monte-carlo tree search to avoid explosion with more forms/larger number of helpers
 
