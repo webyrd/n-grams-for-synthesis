@@ -21,15 +21,16 @@
 (define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
                           "variant-dynamic-ordering-with-application-optimization-incomplete"
 
-                          "variant-barliman-interpreter"
-                          "variant-barliman-interpreter-incomplete"
+                          ;"variant-barliman-interpreter"
+                          ;"variant-barliman-interpreter-incomplete"
 
                           ;"variant-expert-ordering-with-application-optimization"                          
                           ;"variant-dynamic-ordering"
                           ;"variant-expert-ordering"
                           
-                          "variant-old-skool"
-                          "variant-old-skool-incomplete"))
+                          ;"variant-old-skool"
+                          ;"variant-old-skool-incomplete"
+                          ))
 
 (for-each (lambda (v)
             (printf "===== ~a\n" v)
