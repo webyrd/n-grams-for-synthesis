@@ -29,7 +29,7 @@
                           ;"variant-barliman-interpreter-incomplete"
 
                           ;"variant-expert-ordering-with-application-optimization"
-                          "variant-expert-ordering-with-application-and-lookup-optimizations.scm"
+                          "variant-expert-ordering-with-application-and-lookup-optimizations"
                           
                           ;"variant-dynamic-ordering"
                           ;"variant-expert-ordering"
