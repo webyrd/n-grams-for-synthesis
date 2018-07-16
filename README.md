@@ -22,14 +22,20 @@ Next TODOs:
 
 * add benchmarks that are of a different style than TLS/C311-style programs
 
+* rewrite application optimization to be easier to explain. Something like this:
+
+```
+(conde-dfs
+  [(lookupo-dfs expr env val)]
+  [(build-and-run-conde expr env eval evalo-clauses)])
+```
+
+where `lookupo-dfs` uses `conde-dfs` and `fresh$` to avoid interleaving.
+
 
 Possible additional optimizations to try:
 
-* From Barliman:
 
-** Environment-splitting
-
-** Turning on 'allow incomplete search' flag
 
 * Other possible optimizations:
 
