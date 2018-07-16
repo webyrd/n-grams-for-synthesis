@@ -87,7 +87,7 @@
            (foldl cons '() xs))))))
  
 
- (test "rev-tailcall-1"
+ (test-p "rev-tailcall-1"
    (run 1 (defn)
      (let ((g1 (gensym "g1"))
            (g2 (gensym "g2"))
@@ -111,12 +111,20 @@
                     (rev-tailcall '(,g2 ,g3) ',g7)
                     (rev-tailcall '(,g4 ,g5 ,g6) ',g7)))
                 (list g7 `(,g1 . ,g7) `(,g3 ,g2 . ,g7) `(,g6 ,g5 ,g4 . ,g7))))))
-   '(((lambda (_.0 _.1)
-        (if (null? _.0)
-            _.1
-            (rev-tailcall (cdr _.0) (cons (car _.0) _.1))))
-      (=/= ((_.0 _.1)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 if)) ((_.0 null?)) ((_.0 rev-tailcall)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 if)) ((_.1 null?)) ((_.1 rev-tailcall)))
-      (sym _.0 _.1))))
+   (one-of?
+    '((((lambda (_.0 _.1)
+          (if (null? _.0)
+              _.1
+              (rev-tailcall (cdr _.0) (cons (car _.0) _.1))))
+        (=/= ((_.0 _.1)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 if)) ((_.0 null?)) ((_.0 rev-tailcall)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 if)) ((_.1 null?)) ((_.1 rev-tailcall)))
+        (sym _.0 _.1)))
+      (((lambda (_.0 _.1)
+          (if (null? _.0)
+              _.1
+              (rev-tailcall (cdr _.0) (cons (car _.0) _.1))))
+        (=/= ((_.0 _.1)) ((_.0 and)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 equal?)) ((_.0 if)) ((_.0 lambda)) ((_.0 letrec)) ((_.0 list)) ((_.0 match)) ((_.0 not)) ((_.0 null?)) ((_.0 or)) ((_.0 quote)) ((_.0 rev-tailcall)) ((_.0 symbol?)) ((_.1 and)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 equal?)) ((_.1 if)) ((_.1 lambda)) ((_.1 letrec)) ((_.1 list)) ((_.1 match)) ((_.1 not)) ((_.1 null?)) ((_.1 or)) ((_.1 quote)) ((_.1 rev-tailcall)) ((_.1 symbol?)))
+        (sym _.0 _.1)))
+      )))
 
 (test "foldr-from-append"
   (run 1 (defn-foldr)
@@ -249,10 +257,11 @@
     (evalo
      `(letrec ([remove
                 (lambda (x ls)
-                  (cond
-                    [(null? ls) '()]
-                    [(equal? (car ls) x) (remove x (cdr ls))]
-                    [else (cons (car ls) (remove x (cdr ls)))]))])
+                  (if (null? ls)
+                      '()
+                      (if (equal? (car ls) x)
+                          (remove x (cdr ls))
+                          (cons (car ls) (remove x (cdr ls))))))])
         (list (remove 'foo '())
               (remove 'foo '(foo))
               (remove 'foo '(1))
@@ -267,11 +276,11 @@
     (evalo
      `(letrec ([remove
                 (lambda (x ls)
-                  (cond
-                    [(null? ls) '()]
-                    [(equal? (car ls) x) (cons ,A ,B)]
-                    .
-                    ,C)) ])
+                  (if (null? ls)
+                      '()
+                      (if (equal? (car ls) x)
+                          (cons ,A ,B)
+                          ,C))) ])
         (list (remove 'foo '())
               (remove 'foo '(foo))
               (remove 'foo '(1))
@@ -280,43 +289,6 @@
               (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
      '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
   '())
-
-(test "remove-deep-1"
-  (run 1 (q)
-    (evalo
-     `(letrec ([remove
-                (lambda (x ls)
-                  (cond
-                    [(null? ls) '()]
-                    [(equal? (car ls) x) (remove x (cdr ls))]
-                    [(pair? (car ls)) (cons (remove x (car ls)) (remove x (cdr ls)))]
-                    [else (cons (car ls) (remove x (cdr ls)))]))])
-        (list (remove 'foo '())
-              (remove 'foo '(foo))
-              (remove 'foo '(1))
-              (remove 'foo '(2 foo 3))
-              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-     '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
-  '((_.0)))
-
-(test "remove-deep-2"
-    (run 1 (A B)
-      (evalo
-        `(letrec ([remove
-                    (lambda (x ls)
-                      (cond
-                        [(null? ls) '()]
-                        [(equal? (car ls) x) ,A]
-                        [else (cons (car ls) ,B)]))])
-           (list (remove 'foo '())
-                 (remove 'foo '(foo))
-                 (remove 'foo '(1))
-                 (remove 'foo '(2 foo 3))
-                 (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-                 (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-        '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
-    '())
 
 (test "list-nth-element-peano"
   (run 1 (q r)
@@ -350,13 +322,15 @@
         (absento g7 defn)
         (== `(lambda (f xs)
                (if (null? xs)
-                   xs (cons (f (car xs)) (map f (cdr xs)))))
+                   xs
+                   (cons (f (car xs))
+                         (map f (cdr xs)))))
             defn)
         (evalo `(letrec ((map ,defn))                 
                   (list
                    (map ',g1 '())
-                   (map car '((,g2 . ,g3)))
-                   (map cdr '((,g4 . ,g5) (,g6 . ,g7)))))
+                   (map (lambda (p) (car p)) '((,g2 . ,g3)))
+                   (map (lambda (p) (cdr p)) '((,g4 . ,g5) (,g6 . ,g7)))))
                (list '() `(,g2) `(,g5 ,g7))))))
   '(((lambda (f xs)
        (if (null? xs)
@@ -383,11 +357,11 @@
                (if (null? xs)
                    ,a (cons ,b (map f ,c))))
             defn)
-        (evalo `(letrec ((map ,defn))                  
+        (evalo `(letrec ((map ,defn))             
                   (list
                    (map ',g1 '())
-                   (map car '((,g2 . ,g3)))
-                   (map cdr '((,g4 . ,g5) (,g6 . ,g7)))))
+                   (map (lambda (p) (car p)) '((,g2 . ,g3)))
+                   (map (lambda (p) (cdr p)) '((,g4 . ,g5) (,g6 . ,g7)))))
                (list '() `(,g2) `(,g5 ,g7))))))
   '(((lambda (f xs)
        (if (null? xs)
@@ -417,8 +391,8 @@
          (evalo `(letrec ((map ,defn))
                    (list
                      (map ',g1 '())
-                     (map car '((,g2 . ,g3)))
-                     (map cdr '((,g4 . ,g5) (,g6 . ,g7)))))
+                     (map (lambda (p) (car p)) '((,g2 . ,g3)))
+                     (map (lambda (p) (cdr p)) '((,g4 . ,g5) (,g6 . ,g7)))))
                 (list '() `(,g2) `(,g5 ,g7))))))
    '(((lambda (f xs)
         (if (null? xs)
