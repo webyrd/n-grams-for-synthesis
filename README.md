@@ -14,6 +14,15 @@ Scientific questions we are trying to answer with this code:
 * Does composing effective optimization techniques ever slow down the resulting code?
 
 
+Next TODOs:
+
+* bigger corpus (and remove benchmarks from the corpus)
+
+* use more context (such as two levels--parent/grandparent)
+
+* add benchmarks that are of a different style than TLS/C311-style programs
+
+
 Possible additional optimizations to try:
 
 * From Barliman:
