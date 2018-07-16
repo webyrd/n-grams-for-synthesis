@@ -18,13 +18,19 @@
 ;; then, run benchmarks for different interpreters
 
 
-(define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
-                          "variant-dynamic-ordering-with-application-optimization-incomplete"
+(define variants-to-run '(
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations"
+                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-incomplete"
+                          
+                          "variant-dynamic-ordering-with-application-optimization"
+                          ;"variant-dynamic-ordering-with-application-optimization-incomplete"
 
-                          "variant-barliman-interpreter"
-                          "variant-barliman-interpreter-incomplete"
+                          ;"variant-barliman-interpreter"
+                          ;"variant-barliman-interpreter-incomplete"
 
-                          ;"variant-expert-ordering-with-application-optimization"                          
+                          ;"variant-expert-ordering-with-application-optimization"
+                          "variant-expert-ordering-with-application-and-lookup-optimizations.scm"
+                          
                           ;"variant-dynamic-ordering"
                           ;"variant-expert-ordering"
                           

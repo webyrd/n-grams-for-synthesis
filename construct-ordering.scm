@@ -21,4 +21,6 @@
     (match . ,match-evalo)))
 
 (define expert-ordering
-  (map cdr expert-ordering-alist))
+  (map cdr (if lookup-optimization?
+               (remove (assq 'var expert-ordering-alist) expert-ordering-alist)
+               expert-ordering-alist)))

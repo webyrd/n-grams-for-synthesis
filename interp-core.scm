@@ -416,38 +416,34 @@
   (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
 
-(define expert-ordering-alist
-  `((quote . ,quote-evalo)
-    (num . ,num-evalo)
-    (bool . ,bool-evalo)
-    (var . ,var-evalo)
-    (lambda . ,lambda-evalo)
-    (app . ,app-evalo)
-    (car . ,car-evalo)
-    (cdr . ,cdr-evalo)
-    (null? . ,null?-evalo)
-    (cons . ,cons-evalo)
-    (if . ,if-evalo)
-    (equal? . ,equal?-evalo)
-    (and . ,and-evalo)
-    (or . ,or-evalo)
-    (list . ,list-evalo)
-    (symbol? . ,symbol?-evalo)
-    (not . ,not-evalo)
-    (letrec . ,letrec-evalo)
-    (match . ,match-evalo)))
-
-(define expert-ordering
-  (map cdr expert-ordering-alist))
+(define (lookupo-k k)
+  (lambda (x env t)
+    (conde
+      ((== '() env) k)
+      ((fresh (y b rest)
+         (== `((,y . ,b) . ,rest) env)
+         (conde
+           ((symbolo x)
+            (== x y)           
+            (conde
+              ((== `(val . ,t) b))
+              ((fresh (lam-expr)
+                 (== `(rec . ,lam-expr) b)
+                 (== `(closure ,lam-expr ,env) t)))))
+           ((=/= x y)
+            ((lookupo-k k) x rest t))))))))
 
 (define build-and-run-conde
   (lambda (expr env val list-of-eval-relations)
-    (lambdag@ (st)
-      (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
-                 (lambdag@ (st)
-                   (let loop ((list-of-eval-relations list-of-eval-relations))
-                     (cond
-                       ((null? list-of-eval-relations) (mzero))
-                       (else
-                        (mplus (((car list-of-eval-relations) expr env val) st)
-                               (inc (loop (cdr list-of-eval-relations)))))))))))))
+    (let ((k (lambdag@ (st)
+               (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
+                          (lambdag@ (st)
+                            (let loop ((list-of-eval-relations list-of-eval-relations))
+                              (cond
+                                ((null? list-of-eval-relations) (mzero))
+                                (else
+                                 (mplus (((car list-of-eval-relations) expr env val) st)
+                                        (inc (loop (cdr list-of-eval-relations)))))))))))))
+      (if lookup-optimization?
+          ((lookupo-k k) expr env val)
+          k))))

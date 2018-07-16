@@ -2,6 +2,8 @@
 
 (define allow-incomplete-search? #f)
 
+(define lookup-optimization? #f)
+
 (load "mk-vicare.scm")
 (load "mk.scm")
 (load "test-check.scm")
