@@ -19,17 +19,17 @@
 
 
 (define variants-to-run '(
+                          ;"variant-expert-ordering-with-application-optimization"
+                          "variant-expert-ordering-with-application-and-lookup-optimizations"
+                          
+                          "variant-barliman-interpreter"
+                          ;"variant-barliman-interpreter-incomplete"
+                          
                           "variant-dynamic-ordering-with-application-and-lookup-optimizations"
                           ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-incomplete"
                           
                           "variant-dynamic-ordering-with-application-optimization"
                           ;"variant-dynamic-ordering-with-application-optimization-incomplete"
-
-                          "variant-barliman-interpreter"
-                          ;"variant-barliman-interpreter-incomplete"
-
-                          ;"variant-expert-ordering-with-application-optimization"
-                          "variant-expert-ordering-with-application-and-lookup-optimizations"
                           
                           ;"variant-dynamic-ordering"
                           ;"variant-expert-ordering"

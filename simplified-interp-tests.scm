@@ -180,7 +180,10 @@
                    ((if '#f _.0 (null? l)))
                    ((if #t (null? l) _.0))
                    ((null? (cdr (cons s l))))
-                   ((equal? l '())))))
+                   ((equal? l '()))
+                   (((lambda (_.0) _.0) (null? l))
+                    (=/= ((_.0 and)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 equal?)) ((_.0 if)) ((_.0 lambda)) ((_.0 letrec)) ((_.0 list)) ((_.0 match)) ((_.0 not)) ((_.0 null?)) ((_.0 or)) ((_.0 quote)) ((_.0 symbol?)))
+                    (sym _.0)))))
 
  (test "append-12"
    (run 1 (prog)
@@ -923,15 +926,25 @@
                      (append '(,g3 ,g4) '(,g5 ,g6)))))
                (list '() `(,g1 ,g2) `(,g3 ,g4 ,g5 ,g6))))))
   (one-of?
-    '(((lambda (f acc xs)
-         (if (null? xs)
-             acc
-             (f (car xs) (foldr f acc (cdr xs))))))
+    '((((lambda (f acc xs)
+          (if (null? xs)
+              acc
+              (f (car xs) (foldr f acc (cdr xs)))))))
       ;; this answer is mk cheating, because we are folding using cons!
       (((lambda (f acc xs)
           (if (null? xs)
               acc
-              (cons (car xs) (foldr xs acc (cdr xs))))))))))
+              (cons (car xs) (foldr xs acc (cdr xs)))))))
+      ;; another cheat
+      (((lambda (f acc xs)
+          (match xs
+            [`() xs]
+            [`(,_.0) (cons _.0 acc)]
+            [_.1 (f (car _.1) (f (car (cdr _.1)) acc))]
+            .
+            _.2))
+        (=/= ((_.0 acc)) ((_.0 and)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 equal?)) ((_.0 if)) ((_.0 lambda)) ((_.0 letrec)) ((_.0 list)) ((_.0 match)) ((_.0 not)) ((_.0 null?)) ((_.0 or)) ((_.0 quote)) ((_.0 symbol?)) ((_.1 acc)) ((_.1 and)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 equal?)) ((_.1 f)) ((_.1 if)) ((_.1 lambda)) ((_.1 letrec)) ((_.1 list)) ((_.1 match)) ((_.1 not)) ((_.1 null?)) ((_.1 or)) ((_.1 quote)) ((_.1 symbol?)))
+        (sym _.0 _.1))))))
 
 (test-p "append-equal-0"
   (run 1 (defn)
