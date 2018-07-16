@@ -21,8 +21,8 @@
 (define variants-to-run '("variant-dynamic-ordering-with-application-optimization"
                           "variant-dynamic-ordering-with-application-optimization-incomplete"
 
-                          ;"variant-barliman-interpreter"
-                          ;"variant-barliman-interpreter-incomplete"
+                          "variant-barliman-interpreter"
+                          "variant-barliman-interpreter-incomplete"
 
                           ;"variant-expert-ordering-with-application-optimization"                          
                           ;"variant-dynamic-ordering"
