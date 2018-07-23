@@ -19,6 +19,7 @@
 
 
 (define variants-to-run '(
+                          "variant-dynamic-ordering-ml"
                           "variant-expert-ordering-ml"
 
                           #|
