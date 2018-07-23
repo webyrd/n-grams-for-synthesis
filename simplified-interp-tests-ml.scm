@@ -425,90 +425,144 @@
         (if (null? l)
             s
             (cons (car l) (@ append (cdr l) s)))))))
-  
- #|
- (test "append-16"
-   (run 1 (prog)
-     (fresh (q r s t)
-       (absento 'a prog)
-       (absento 'b prog)
-       (absento 'c prog)
-       (absento 'd prog)
-       (absento 'e prog)
-       (absento 'f prog)
-       (== `(lambda (l s)
-              (if ,q
-                  ,r
-                  (,s (car l) ,t)))
-           prog)
-       (evalo
-        `(letrec ((append ,prog))
-           (list
-            (append '() '())
-            (append '(a) '(b))
-            (append '(c d) '(e f))))
-        '(()
-          (a b)
-          (c d e f)))))
-   '(((lambda (l s)
-        (if (null? l)
-            s
-            (cons (car l) (append (cdr l) s)))))))
 
- (test "append-17"
-   (run 1 (prog)
-     (fresh (q r s)
-       (absento 'a prog)
-       (absento 'b prog)
-       (absento 'c prog)
-       (absento 'd prog)
-       (absento 'e prog)
-       (absento 'f prog)
-       (== `(lambda (l s)
-              (if ,q
-                  ,r
-                  ,s))
-           prog)
-       (evalo
-        `(letrec ((append ,prog))
-           (list
-            (append '() '())
-            (append '(a) '(b))
-            (append '(c d) '(e f))))
-        '(()
-          (a b)
-          (c d e f)))))
+  (test "append-17a"
+    (run 1 (prog)
+      (fresh (q r s t u)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car ,t) ,u)))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (append (cdr l) s)))))))
+            (cons (car l) (@ append (cdr l) s)))))))
 
- (test "append-18"
-   (run 1 (prog)
-     (fresh (q)
-       (absento 'a prog)
-       (absento 'b prog)
-       (absento 'c prog)
-       (absento 'd prog)
-       (absento 'e prog)
-       (absento 'f prog)
-       (== `(lambda (l s)
-              ,q)
-           prog)
-       (evalo
-        `(letrec ((append ,prog))
-           (list
-            (append '() '())
-            (append '(a) '(b))
-            (append '(c d) '(e f))))
-        '(()
-          (a b)
-          (c d e f)))))
+  (test "append-17b"
+    (run 1 (prog)
+      (fresh (q r s t u)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s ,t ,u)))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (append (cdr l) s)))))))
-|#
+            (cons (car l) (@ append (cdr l) s)))))))  
+
+  (test "append-17-full"
+    (run 1 (prog)
+      (fresh (q r s)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   ,s))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (@ append (cdr l) s)))))))
+
+  (test "append-18"
+    (run 1 (prog)
+      (fresh (q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (@ append (cdr l) s)))))))
+
+  (test "append-19"
+    (run 1 (prog)
+      (fresh (q r)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda ,q
+               ,r)
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (_.0 _.1)
+        (if (null? _.0)
+            _.1
+            (cons (car _.0) (@ append (cdr _.0) _.1))))
+      (=/= ((_.0 _.1)) ((_.0 append)) ((_.1 append)))
+      (sym _.0 _.1))))
  
  #|
 (test "quine-a"

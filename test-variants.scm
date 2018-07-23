@@ -18,16 +18,16 @@
 ;; then, run benchmarks for different interpreters
 
 
-(define variants-to-run '(
-                          "variant-expert-ordering-with-application-and-lookup-optimizations-ml"
-                          "variant-expert-ordering-with-application-optimization-ml"
-                          
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"                          
-                          "variant-dynamic-ordering-with-application-optimization-ml"
+(define variants-to-run '(                          
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
 
                           #|
+                          "variant-dynamic-ordering-with-application-optimization-ml"
+                          
                           "variant-dynamic-ordering-ml"
-                          "variant-expert-ordering-ml"
+                          "variant-expert-ordering-with-application-and-lookup-optimizations-ml"
+                          "variant-expert-ordering-with-application-optimization-ml"
+                          "variant-expert-ordering-ml"                          
                           |#
                           
                           #|
