@@ -1,3 +1,5 @@
+;; ML-ish version of the interpreter, based on joint work with Kanae Tsushima.
+
 (define (bool-evalo expr env val)
   (conde
     ((== #t expr) (== #t val))
