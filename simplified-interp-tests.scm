@@ -6,66 +6,6 @@
 (test-runner
  ;; timeout in seconds
  10
-
-(test "quine-a"
-  (run 1 (e)
-    (evalo e e))
-  '((_.0 (num _.0))))
-
- (test "quine-b"
-  (run 4 (e)
-     (evalo e e))
-   '((_.0 (num _.0)) (#t) (#f) (((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0))))
-      (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote)))
-      (sym _.0))))
-
-(test "quine-c"
-  (run 1 (e)
-    (fresh (a d)
-      (== '((lambda (x) (list x (list 'quote x))) '(lambda (x) (list x (list 'quote x)))) e)
-      (== `(,a . ,d) e))
-    (evalo e e))
-  '((((lambda (x) (list x (list 'quote x))) '(lambda (x) (list x (list 'quote x)))))))
-
-(test "quine-d"
-  (run 1 (e)
-    (fresh (a d)
-      (== `(,a . ,d) e))
-    (evalo e e))
-  '((((lambda (_.0) (list _.0 (list 'quote _.0)))
-      '(lambda (_.0) (list _.0 (list 'quote _.0))))
-     (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote)))
-     (sym _.0))))
-
-(test "quine-e"
-   (run 1 (e v)
-     (fresh (a d)
-       (== `(,a . ,d) e))
-     (evalo e v)
-     (== e v))
-   '(((((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0))))
-       ((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0)))))
-      (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote))) (sym _.0))))
-
-(test "twines-a"
-   (run 1 (p q)
-     (=/= p q)
-     (evalo p q)
-     (evalo q p))
-   '((('((lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))) '(lambda (_.0) (list 'quote (list _.0 (list 'quote _.0))))) ((lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))) '(lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))))) (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote))) (sym _.0))))
-
-(test "thrine-a"
-   (run 1 (p q r)
-     (=/= p q)
-     (=/= p r)
-     (=/= q r)
-     (evalo p q)
-     (evalo q r)
-     (evalo r p))
-   '???)
-
-
- 
  
 ;; append tests
  
@@ -1822,6 +1762,65 @@
                        'initial-env)))
        q))
     (list '(((lambda (x) `(,x ',x)) '(lambda (x) `(,x ',x))))))
+
+
+
+(test "quine-a"
+  (run 1 (e)
+    (evalo e e))
+  '((_.0 (num _.0))))
+
+ (test "quine-b"
+  (run 4 (e)
+     (evalo e e))
+   '((_.0 (num _.0)) (#t) (#f) (((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0))))
+      (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote)))
+      (sym _.0))))
+
+(test "quine-c"
+  (run 1 (e)
+    (fresh (a d)
+      (== '((lambda (x) (list x (list 'quote x))) '(lambda (x) (list x (list 'quote x)))) e)
+      (== `(,a . ,d) e))
+    (evalo e e))
+  '((((lambda (x) (list x (list 'quote x))) '(lambda (x) (list x (list 'quote x)))))))
+
+(test "quine-d"
+  (run 1 (e)
+    (fresh (a d)
+      (== `(,a . ,d) e))
+    (evalo e e))
+  '((((lambda (_.0) (list _.0 (list 'quote _.0)))
+      '(lambda (_.0) (list _.0 (list 'quote _.0))))
+     (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote)))
+     (sym _.0))))
+
+(test "quine-e"
+   (run 1 (e v)
+     (fresh (a d)
+       (== `(,a . ,d) e))
+     (evalo e v)
+     (== e v))
+   '(((((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0))))
+       ((lambda (_.0) (list _.0 (list 'quote _.0))) '(lambda (_.0) (list _.0 (list 'quote _.0)))))
+      (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote))) (sym _.0))))
+
+(test "twines-a"
+   (run 1 (p q)
+     (=/= p q)
+     (evalo p q)
+     (evalo q p))
+   '((('((lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))) '(lambda (_.0) (list 'quote (list _.0 (list 'quote _.0))))) ((lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))) '(lambda (_.0) (list 'quote (list _.0 (list 'quote _.0)))))) (=/= ((_.0 closure)) ((_.0 list)) ((_.0 prim)) ((_.0 quote))) (sym _.0))))
+
+(test "thrine-a"
+   (run 1 (p q r)
+     (=/= p q)
+     (=/= p r)
+     (=/= q r)
+     (evalo p q)
+     (evalo q r)
+     (evalo r p))
+   '???)
 
  )
 
