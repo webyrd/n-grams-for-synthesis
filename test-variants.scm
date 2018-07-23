@@ -19,6 +19,9 @@
 
 
 (define variants-to-run '(
+                          "variant-expert-ordering-ml"
+
+                          #|
                           "variant-expert-ordering-with-application-optimization"
                           "variant-expert-ordering-with-application-and-lookup-optimizations"
                           
@@ -36,6 +39,7 @@
                           
                           "variant-old-skool"
                           "variant-old-skool-incomplete"
+                          |#
                           ))
 
 (for-each (lambda (v)
