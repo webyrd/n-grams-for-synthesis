@@ -18,7 +18,15 @@
 ;; then, run benchmarks for different interpreters
 
 
-(define variants-to-run '(                          
+(define variants-to-run '(
+
+                          ;;; !!! IMPORTANT !!!
+                          ;;;
+                          ;;; Interpreters for ML-like languages
+                          ;;; should be run separately than the non-ML
+                          ;;; interpreters, since the tests are
+                          ;;; distinct.
+                          
                           "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
 
                           #|
@@ -29,6 +37,7 @@
                           "variant-expert-ordering-with-application-optimization-ml"
                           "variant-expert-ordering-ml"                          
                           |#
+
                           
                           #|
                           "variant-expert-ordering-with-application-optimization"
