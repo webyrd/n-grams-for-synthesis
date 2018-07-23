@@ -257,64 +257,36 @@
         (if (null? l)
             s
             (cons (car l) (@ append (cdr l) s)))))))
- 
- #|
- (test "append-13"
-   (run 1 (prog)
-     (fresh (q r s)
-       (absento 'a prog)
-       (absento 'b prog)
-       (absento 'c prog)
-       (absento 'd prog)
-       (absento 'e prog)
-       (absento 'f prog)
-       (== `(lambda (l s)
-              (if ,q
-                  ,r
-                  (cons (car l) (append (cdr l) s))))
-           prog)
-       (evalo
-        `(letrec ((append ,prog))
-           (list
-            (append '() '())
-            (append '(a) '(b))
-            (append '(c d) '(e f))))
-        '(()
-          (a b)
-          (c d e f)))))
-   '(((lambda (l s)
-        (if (null? l)
-            s
-            (cons (car l) (append (cdr l) s)))))))
 
  (test "append-14"
    (run 1 (prog)
      (fresh (q r s)
-       (absento 'a prog)
-       (absento 'b prog)
-       (absento 'c prog)
-       (absento 'd prog)
-       (absento 'e prog)
-       (absento 'f prog)
+       (absento 1 prog)
+       (absento 2 prog)
+       (absento 3 prog)
+       (absento 4 prog)
+       (absento 5 prog)
+       (absento 6 prog)
        (== `(lambda (l s)
               (if ,q
                   ,r
-                  (,s (car l) (append (cdr l) s))))
+                  (,s (car l) (@ append (cdr l) s))))
            prog)
        (evalo
         `(letrec ((append ,prog))
            (list
-            (append '() '())
-            (append '(a) '(b))
-            (append '(c d) '(e f))))
-        '(()
-          (a b)
-          (c d e f)))))
+             (@ append nil nil)
+             (@ append (cons 1 nil) (cons 2 nil))
+             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        '(nil
+          (cons 1 (cons 2 nil))
+          (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (append (cdr l) s)))))))
+            (cons (car l) (@ append (cdr l) s)))))))
 
+ #|
  (test "append-15"
    (run 1 (prog)
      (fresh (q r s t)
