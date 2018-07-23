@@ -193,6 +193,90 @@
            nil
            (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
 
+(test "reverse-5-let"
+  (run 1 (defn)
+    (fresh (q r s t)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+      
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ (lambda (a d)
+                      (@ ,q (@ ,r ,s) ,t))
+                  (car xs)
+                  (cdr xs))))
+          defn)
+      
+      (evalo `(letrec  ((append
+                         (lambda (l s)
+                           (if (null? l) s
+                               (cons (car l)
+                                     (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ (lambda (a d)
+                (@ append (@ reverse d) (cons a nil)))
+              (car xs)
+              (cdr xs)))))))
+
+(test "reverse-6-let"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+      
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ (lambda (a d)
+                      (@ ,q ,r ,s))
+                  (car xs)
+                  (cdr xs))))
+          defn)
+      
+      (evalo `(letrec  ((append
+                         (lambda (l s)
+                           (if (null? l) s
+                               (cons (car l)
+                                     (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ (lambda (a d)
+                (@ append (@ reverse d) (cons a nil)))
+              (car xs)
+              (cdr xs)))))))
+
 (test "reverse-6"
   (run 1 (defn)
     (fresh (q r s)
