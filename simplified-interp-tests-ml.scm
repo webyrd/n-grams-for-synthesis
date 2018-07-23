@@ -2,6 +2,235 @@
  ;; timeout in seconds
  10
 
+;;; reverse tests
+
+(test "reverse-1"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q (@ reverse ,r) ,s)))
+          defn)
+         
+      (== 'append q)
+      (== '(cdr xs) r)
+      (== '(cons (car xs) nil) s)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+
+(test "reverse-2"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q (@ reverse ,r) ,s)))
+          defn)
+      
+      (== '(cdr xs) r)
+      (== '(cons (car xs) nil) s)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+
+(test "reverse-3"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q (@ reverse ,r) ,s)))
+          defn)
+      
+      (== '(cons (car xs) nil) s)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+
+(test "reverse-4"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q (@ reverse ,r) ,s)))
+          defn)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+
+(test "reverse-5"
+  (run 1 (defn)
+    (fresh (q r s t)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q (@ ,r ,s) ,t)))
+          defn)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+
+(test "reverse-6"
+  (run 1 (defn)
+    (fresh (q r s)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+
+      (== `(lambda (xs)
+             (if (null? xs)
+                 nil
+                 (@ ,q ,r ,s)))
+          defn)
+      
+      (evalo `(letrec ((append
+                        (lambda (l s)
+                          (if (null? l) s
+                              (cons (car l)
+                                    (@ append (cdr l) s))))))
+                (letrec ((reverse ,defn))
+                  (list
+                   (@ reverse nil)
+                   (@ reverse (cons 1 nil))
+                   (@ reverse (cons 2 (cons 3 nil)))
+                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+             (list 'nil
+                   `(cons 1 nil)
+                   `(cons 3 (cons 2 nil))
+                   `(cons 6 (cons 5 (cons 4 nil)))))))    
+  '(((lambda (xs)
+       (if (null? xs)
+           nil
+           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+  
+
+ 
  (test "bool-0"
    (run* (q)
      (evalo
@@ -596,7 +825,6 @@
                         (@ stutter (cdr _.0))))))
       (=/= ((_.0 stutter)))
       (sym _.0))))
-
 
 
   
