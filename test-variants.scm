@@ -19,13 +19,14 @@
 
 
 (define variants-to-run '(
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
+                          "variant-expert-ordering-with-application-and-lookup-optimizations-ml"
+                          "variant-expert-ordering-with-application-optimization-ml"
                           
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"                          
                           "variant-dynamic-ordering-with-application-optimization-ml"
 
                           #|
                           "variant-dynamic-ordering-ml"
-                          "variant-expert-ordering-with-application-optimization-ml"
                           "variant-expert-ordering-ml"
                           |#
                           
