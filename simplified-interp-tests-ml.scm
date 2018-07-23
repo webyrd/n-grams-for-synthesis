@@ -563,7 +563,43 @@
             (cons (car _.0) (@ append (cdr _.0) _.1))))
       (=/= ((_.0 _.1)) ((_.0 append)) ((_.1 append)))
       (sym _.0 _.1))))
- 
+
+
+  ;; stutter example taken from 'Type-and-Example-Directed Program Synthesis' by
+  ;; Peter-Michael Osera and Steve Zdancewic (PLDI '15)
+  (test "stutter-full"
+    (run 1 (prog)
+      (fresh (q r)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda ,q
+               ,r)
+            prog)
+        (evalo
+         `(letrec ((stutter ,prog))
+            (list
+              (@ stutter nil)
+              (@ stutter (cons 0 nil))
+              (@ stutter (cons 1 (cons 0 nil)))))
+         '(nil
+           (cons 0 (cons 0 nil))
+           (cons 1 (cons 1 (cons 0 (cons 0 nil))))))))
+   '(((lambda (_.0)
+        (if (null? _.0)
+            _.0
+            (cons (car _.0)
+                  (cons (car _.0)
+                        (@ stutter (cdr _.0))))))
+      (=/= ((_.0 stutter)))
+      (sym _.0))))
+
+
+
+  
  #|
 (test "quine-a"
   (run 1 (e)
