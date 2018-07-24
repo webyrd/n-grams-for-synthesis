@@ -3,7 +3,7 @@
 (set! app-evalo
       (lambda (expr env val)
         (fresh (rator x* rands body env^ a* res)
-          (== `(@ ,rator . ,rands) expr)
+          (== `(,rator . ,rands) expr)
           ;; Multi-argument
           (eval-expo rator env `(closure (lambda ,x* ,body) ,env^) 'app-rator)
           ;;(eval-randso rands env a*)

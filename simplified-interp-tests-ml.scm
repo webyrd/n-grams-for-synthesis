@@ -17,21 +17,21 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ append (@ reverse (cdr xs)) ,q)))
+                 (append (reverse (cdr xs)) ,q)))
           defn)
       
       (evalo `(letrec ((append
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
                    reverse
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list `(closure . ,clos)
                    'nil
                    `(cons 1 nil)
@@ -40,7 +40,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
  
 (test "reverse-1"
   (run 1 (defn)
@@ -55,7 +55,7 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q (@ reverse ,r) ,s)))
+                 (,q (reverse ,r) ,s)))
           defn)
          
       (== 'append q)
@@ -66,13 +66,13 @@
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -80,7 +80,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
 
 (test "reverse-2"
   (run 1 (defn)
@@ -95,7 +95,7 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q (@ reverse ,r) ,s)))
+                 (,q (reverse ,r) ,s)))
           defn)
       
       (== '(cdr xs) r)
@@ -105,13 +105,13 @@
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -119,7 +119,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
 
 (test "reverse-3"
   (run 1 (defn)
@@ -134,7 +134,7 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q (@ reverse ,r) ,s)))
+                 (,q (reverse ,r) ,s)))
           defn)
       
       (== '(cons (car xs) nil) s)
@@ -143,13 +143,13 @@
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -157,7 +157,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
 
 (test "reverse-4"
   (run 1 (defn)
@@ -172,20 +172,20 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q (@ reverse ,r) ,s)))
+                 (,q (reverse ,r) ,s)))
           defn)
       
       (evalo `(letrec ((append
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -193,7 +193,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
 
 (test "reverse-5"
   (run 1 (defn)
@@ -208,20 +208,20 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q (@ ,r ,s) ,t)))
+                 (,q (,r ,s) ,t)))
           defn)
       
       (evalo `(letrec ((append
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -229,7 +229,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
 
 (test "reverse-5-let"
   (run 1 (defn)
@@ -244,8 +244,8 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ (lambda (a d)
-                      (@ ,q (@ ,r ,s) ,t))
+                 ((lambda (a d)
+                      (,q (,r ,s) ,t))
                   (car xs)
                   (cdr xs))))
           defn)
@@ -254,13 +254,13 @@
                          (lambda (l s)
                            (if (null? l) s
                                (cons (car l)
-                                     (@ append (cdr l) s))))))
+                                     (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -268,8 +268,8 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ (lambda (a d)
-                (@ append (@ reverse d) (cons a nil)))
+           ((lambda (a d)
+                (append (reverse d) (cons a nil)))
               (car xs)
               (cdr xs)))))))
 
@@ -286,8 +286,8 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ (lambda (a d)
-                      (@ ,q ,r ,s))
+                 ((lambda (a d)
+                      (,q ,r ,s))
                   (car xs)
                   (cdr xs))))
           defn)
@@ -296,13 +296,13 @@
                          (lambda (l s)
                            (if (null? l) s
                                (cons (car l)
-                                     (@ append (cdr l) s))))))
+                                     (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -310,8 +310,8 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ (lambda (a d)
-                (@ append (@ reverse d) (cons a nil)))
+           ((lambda (a d)
+                (append (reverse d) (cons a nil)))
               (car xs)
               (cdr xs)))))))
 
@@ -328,20 +328,20 @@
       (== `(lambda (xs)
              (if (null? xs)
                  nil
-                 (@ ,q ,r ,s)))
+                 (,q ,r ,s)))
           defn)
       
       (evalo `(letrec ((append
                         (lambda (l s)
                           (if (null? l) s
                               (cons (car l)
-                                    (@ append (cdr l) s))))))
+                                    (append (cdr l) s))))))
                 (letrec ((reverse ,defn))
                   (list
-                   (@ reverse nil)
-                   (@ reverse (cons 1 nil))
-                   (@ reverse (cons 2 (cons 3 nil)))
-                   (@ reverse (cons 4 (cons 5 (cons 6 nil)))))))
+                   (reverse nil)
+                   (reverse (cons 1 nil))
+                   (reverse (cons 2 (cons 3 nil)))
+                   (reverse (cons 4 (cons 5 (cons 6 nil)))))))
              (list 'nil
                    `(cons 1 nil)
                    `(cons 3 (cons 2 nil))
@@ -349,7 +349,7 @@
   '(((lambda (xs)
        (if (null? xs)
            nil
-           (@ append (@ reverse (cdr xs)) (cons (car xs) nil)))))))
+           (append (reverse (cdr xs)) (cons (car xs) nil)))))))
   
 
  
@@ -439,8 +439,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append nil nil))
+                              (cons (car l) (append (cdr l) s))))))
+         (append nil nil))
       q))
    '((nil)))
  
@@ -450,8 +450,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((_.0)))
 
@@ -461,8 +461,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       q))
    '(((cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil))))))))
 
@@ -473,8 +473,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               ,q
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((s)))
 
@@ -484,8 +484,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               ,q
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((s)))  
   
@@ -496,8 +496,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               ,q
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((s)))
  
@@ -507,8 +507,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               ,q
-                              (cons (car l) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((s)))
 
@@ -518,8 +518,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car ,q) (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car ,q) (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((l)))
  
@@ -529,8 +529,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons ,q (@ append (cdr l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons ,q (append (cdr l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '(((car l))))
 
@@ -540,8 +540,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (cdr ,q) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (cdr ,q) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((l)))
 
@@ -551,8 +551,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (,q l) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (,q l) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '((cdr)))
 
@@ -564,8 +564,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (,q ,r) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (,q ,r) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '(((cdr l))))
 
@@ -575,8 +575,8 @@
       `(letrec ((append (lambda (l s)
                           (if (null? l)
                               s
-                              (cons (car l) (@ append (,q ,r) s))))))
-         (@ append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
+                              (cons (car l) (append (,q ,r) s))))))
+         (append (cons 1 (cons 2 (cons 3 nil))) (cons 4 (cons 5 nil))))
       '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))))
    '(((cdr l))))
 
@@ -593,21 +593,21 @@
        (== `(lambda (l s)
               (if ,q
                   ,r
-                  (cons (car l) (@ append (cdr l) s))))
+                  (cons (car l) (append (cdr l) s))))
            prog)
        (evalo
         `(letrec ((append ,prog))
            (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
         '(nil
           (cons 1 (cons 2 nil))
           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
  (test "append-14"
    (run 1 (prog)
@@ -621,21 +621,21 @@
        (== `(lambda (l s)
               (if ,q
                   ,r
-                  (,s (car l) (@ append (cdr l) s))))
+                  (,s (car l) (append (cdr l) s))))
            prog)
        (evalo
         `(letrec ((append ,prog))
            (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
         '(nil
           (cons 1 (cons 2 nil))
           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-14a"
    (run 1 (prog)
@@ -649,21 +649,21 @@
        (== `(lambda (l s)
               (if ,q
                   ,r
-                  (,s (car l) (@ append (cdr ,t) s))))
+                  (,s (car l) (append (cdr ,t) s))))
            prog)
        (evalo
         `(letrec ((append ,prog))
            (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
         '(nil
           (cons 1 (cons 2 nil))
           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-14b"
    (run 1 (prog)
@@ -677,21 +677,21 @@
        (== `(lambda (l s)
               (if ,q
                   ,r
-                  (,s (car l) (@ append (cdr l) ,t))))
+                  (,s (car l) (append (cdr l) ,t))))
            prog)
        (evalo
         `(letrec ((append ,prog))
            (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
         '(nil
           (cons 1 (cons 2 nil))
           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))  
+            (cons (car l) (append (cdr l) s)))))))  
 
   (test "append-15"
     (run 1 (prog)
@@ -705,21 +705,21 @@
         (== `(lambda (l s)
                (if ,q
                    ,r
-                   (,s (car l) (@ append ,t s))))
+                   (,s (car l) (append ,t s))))
             prog)
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-15b"
     (run 1 (prog)
@@ -733,21 +733,21 @@
         (== `(lambda (l s)
                (if ,q
                    ,r
-                   (,s (car l) (@ append ,t ,u))))
+                   (,s (car l) (append ,t ,u))))
             prog)
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-16"
     (run 1 (prog)
@@ -766,16 +766,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-17a"
     (run 1 (prog)
@@ -794,16 +794,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-17b"
     (run 1 (prog)
@@ -822,16 +822,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))  
+            (cons (car l) (append (cdr l) s)))))))  
 
   (test "append-17-full"
     (run 1 (prog)
@@ -850,16 +850,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-18"
     (run 1 (prog)
@@ -876,16 +876,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (l s)
         (if (null? l)
             s
-            (cons (car l) (@ append (cdr l) s)))))))
+            (cons (car l) (append (cdr l) s)))))))
 
   (test "append-19"
     (run 1 (prog)
@@ -902,16 +902,16 @@
         (evalo
          `(letrec ((append ,prog))
             (list
-             (@ append nil nil)
-             (@ append (cons 1 nil) (cons 2 nil))
-             (@ append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
          '(nil
            (cons 1 (cons 2 nil))
            (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
    '(((lambda (_.0 _.1)
         (if (null? _.0)
             _.1
-            (cons (car _.0) (@ append (cdr _.0) _.1))))
+            (cons (car _.0) (append (cdr _.0) _.1))))
       (=/= ((_.0 _.1)) ((_.0 append)) ((_.1 append)))
       (sym _.0 _.1))))
 
@@ -933,9 +933,9 @@
         (evalo
          `(letrec ((stutter ,prog))
             (list
-              (@ stutter nil)
-              (@ stutter (cons 0 nil))
-              (@ stutter (cons 1 (cons 0 nil)))))
+              (stutter nil)
+              (stutter (cons 0 nil))
+              (stutter (cons 1 (cons 0 nil)))))
          '(nil
            (cons 0 (cons 0 nil))
            (cons 1 (cons 1 (cons 0 (cons 0 nil))))))))
@@ -944,7 +944,7 @@
             _.0
             (cons (car _.0)
                   (cons (car _.0)
-                        (@ stutter (cdr _.0))))))
+                        (stutter (cdr _.0))))))
       (=/= ((_.0 stutter)))
       (sym _.0))))
 
