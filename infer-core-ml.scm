@@ -100,17 +100,12 @@
     (!-o rator gamma `(-> ,t* ,type) 'app-rator)
     (!-o-randso rands gamma t*)))
 
-;;; TODO
-;;; Hmmm...should we require e1 and e2 to have the same type?
-;;; What are the normal HM rules for this?
 (define (equal?-!-o expr gamma type)
-  (fresh (e1 e2 v1 v2)
+  (fresh (e1 e2 t)
     (== `(equal? ,e1 ,e2) expr)
-    (conde
-      ((== v1 v2) (== #t type))
-      ((=/= v1 v2) (== #f type)))
-    (type-expo e1 gamma v1 'equal?-e1)
-    (type-expo e2 gamma v2 'equal?-e2)))
+    (== 'bool type)
+    (!-o e1 gamma t 'equal?-e1)
+    (!-o e2 gamma t 'equal?-e2)))
 
 (define (and-!-o expr gamma type)
   (fresh (e*)
