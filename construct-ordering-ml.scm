@@ -1,5 +1,5 @@
 
-(define expert-ordering-alist
+(define expert-ordering-alist-ml
   `((nil . ,nil-evalo)
     (num . ,num-evalo)
     (bool . ,bool-evalo)
@@ -22,5 +22,5 @@
 
 (define expert-ordering-ml
   (map cdr (if lookup-optimization?
-               (remove (assq 'var expert-ordering-alist) expert-ordering-alist)
-               expert-ordering-alist)))
+               (remove (assq 'var expert-ordering-alist) expert-ordering-alist-ml)
+               expert-ordering-alist-ml)))

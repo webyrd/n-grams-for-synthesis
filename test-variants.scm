@@ -25,9 +25,14 @@
                           ;;; Interpreters for ML-like languages
                           ;;; should be run separately than the non-ML
                           ;;; interpreters, since the tests are
-                          ;;; distinct.
+                          ;;; distinct.  Similarly, the type
+                          ;;; inferencers should be run separately.
+
+
+                          "variant-expert-ordering-ml-infer"
+
                           
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
+                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
                           ;"variant-dynamic-ordering-ml"
                           ;"variant-expert-ordering-with-application-and-lookup-optimizations-ml"
 
