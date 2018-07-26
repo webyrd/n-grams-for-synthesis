@@ -129,6 +129,11 @@
   (one-of?
     '((#t)
       ;;; hmmm--should ((x)) be considered correct?
+      ;;;
+      ;;; probably the best way to fix this is to have the formal parameters
+      ;;; of lambda associated with types:
+      ;;;
+      ;;; `(lambda (x : bool) ,q)
       ((x)))))
 
 (test "26b"
