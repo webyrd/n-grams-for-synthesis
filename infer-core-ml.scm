@@ -79,7 +79,7 @@
            ,letrec-body)
         expr)
     (symbolo p-name)
-    (list-of-symbolso x*)
+    (list-of-symbolso-ml-infer x*)
 
    ;; Make sure the right-hand-side of the polymorphic 'letrec'
    ;; binding has a type, but then forget about the type.
@@ -187,13 +187,13 @@
 
 ;; need to make sure lambdas are well formed.
 ;; grammar constraints would be useful here!!!
-(define (list-of-symbolso los)
+(define (list-of-symbolso-ml-infer los)
   (conde
     ((== '() los))
     ((fresh (a d)
        (== `(,a . ,d) los)
        (symbolo a)
-       (list-of-symbolso d)))))
+       (list-of-symbolso-ml-infer d)))))
 
 (define (ext-gamma-mono*o x* t* gamma out)
   (conde
@@ -230,7 +230,7 @@
 (define (type-expo expr type)
   (!-o expr empty-gamma type 'top-level))
 
-(define (alist-ref alist element failure-result)
+(define (alist-ref-ml-infer alist element failure-result)
   (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
 
@@ -259,7 +259,7 @@
            ((=/= x y)
             ((lookup-!-o-k k) x rest type))))))))
 
-(define build-and-run-conde
+(define build-and-run-conde-ml-infer
   (lambda (expr gamma type list-of-!-o-relations)
     (let ((k (lambdag@ (st)
                (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))

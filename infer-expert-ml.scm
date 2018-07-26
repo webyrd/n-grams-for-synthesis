@@ -24,6 +24,6 @@
     (letrec . ,letrec-!-o)))
   |#
   
-  (build-and-run-conde expr gamma type
-                       expert-ordering-ml-infer
-                       ))
+  (build-and-run-conde-ml-infer expr gamma type
+                                expert-ordering-ml-infer
+                                ))

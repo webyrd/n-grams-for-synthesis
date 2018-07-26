@@ -10,7 +10,7 @@
           )))
 
 
-(define-syntax let/vars
+(define-syntax let/vars-ml-infer
   (syntax-rules ()
     ((_ _ () body) body)
     ((_ _ () body ...) (begin body ...))
@@ -19,7 +19,7 @@
        (let ((qvar (var scope)) ...)
          body ...)))))
 
-(define (list-split-ground st xs)
+(define (list-split-ground-ml-infer st xs)
   (let loop ((rprefix '()) (xs xs))
     (let ((tm (walk xs (state-S st))))
       (if (pair? tm)
@@ -29,7 +29,7 @@
 (define (!-o-application rands gamma types)
   (define succeed unit)
   (lambdag@ (st)
-    (let-values (((rrands rands-suffix) (list-split-ground st rands)))
+    (let-values (((rrands rands-suffix) (list-split-ground-ml-infer st rands)))
       (let-values
         (((ggoals vgoals types-suffix)
           (let loop ((rands (reverse rrands))
@@ -38,7 +38,7 @@
                      (types types))
             (if (null? rands) (values ggoals vgoals types)
               (let ((rand (car rands)))
-                (let/vars st (types-rest)
+                (let/vars-ml-infer st (types-rest)
                   (let ((goal (fresh (type)
                                 (== `(,type . ,types-rest) types)
                                 (!-o rand gamma type 'app-rand*))))

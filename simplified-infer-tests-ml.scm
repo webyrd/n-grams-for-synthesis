@@ -127,7 +127,7 @@
 (test-p "26"
   (run 1 (q) (type-expo `(lambda (x) ,q) `(-> (bool) bool)))
   (one-of?
-    '((#t)
+    '(((#t))
       ;;; hmmm--should ((x)) be considered correct?
       ;;;
       ;;; probably the best way to fix this is to have the formal parameters

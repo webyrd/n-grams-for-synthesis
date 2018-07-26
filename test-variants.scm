@@ -28,14 +28,19 @@
                           ;;; distinct.  Similarly, the type
                           ;;; inferencers should be run separately.
 
+                          
+                          #| Combined evaluators/inferencers for ML-like language: |#
+                          
+                          ;"variant-expert-ordering-ml-interp-and-infer"
 
+                          
                           #| Type inferencers for ML-like language: |#
-                          ;"variant-expert-ordering-ml-infer"
+                          
+                          "variant-expert-ordering-ml-infer"
                           ;"variant-dynamic-ordering-ml-infer"
                           ;"variant-dynamic-ordering-with-application-optimization-ml-infer"
-
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer"
-
+                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer"
+                          
                           
                           #| Interpreters for ML-like language: |#
                           
