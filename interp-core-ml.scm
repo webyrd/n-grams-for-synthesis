@@ -253,6 +253,14 @@
   (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
 
+;;; !!! Careful!
+;;;
+;;; This optimized lookup relies on the ability to recursively pass
+;;; around a non-symbol 'x', to reach the base case.
+;;;
+;;; Don't add a (symbolo x) test, since that will break this code!
+;;;
+;;; (Is there a better way to write this???)
 (define (lookupo-k k)
   (lambda (x env t)
     (conde
