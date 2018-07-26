@@ -1,5 +1,15 @@
 ;; Type inferencer for ML-ish language, based on joint work with Kanae Tsushima.
 
+;; Possible changes/improvements:
+;;
+;; * May want to include the types of arguments
+;; as part of the formal parameters to a lambda:
+;;
+;; (lambda (x : int) x)
+;;
+;; * May prefer a curried language for localizing holes
+;; in ill-typed programs.
+
 (define (bool-!-o expr gamma type)
   (conde
     ((== #t expr) (== 'bool type))
