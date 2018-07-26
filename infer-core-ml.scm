@@ -63,7 +63,7 @@
 
 (define (letrec-!-o expr gamma type)
   ;; our letrec is polymorphic
-  (fresh (p-name x* body letrec-body)
+  (fresh (p-name x* body letrec-body t)
     ;; single-function muti-argument letrec version
     (== `(letrec ((,p-name (lambda ,x* ,body)))
            ,letrec-body)
@@ -73,15 +73,15 @@
 
    ;; Make sure the right-hand-side of the polymorphic 'letrec'
    ;; binding has a type, but then forget about the type.
-   (fresh (forgetme)     
+   (fresh (forget-me)     
      (!-o `(lambda ,x* ,body)
           `((,p-name (mono ,forget-me)) . ,gamma)
           forget-me
           'letrec-rhs))
    
    (!-o letrec-body
-        `((,p-name . (poly ((,p-name (mono ,t)) . ,gamma)
-                           (lambda ,x* ,body)))
+        `((,p-name (poly ((,p-name (mono ,t)) . ,gamma)
+                         (lambda ,x* ,body)))
           . ,gamma)
         type
         'letrec-body)))
@@ -95,7 +95,7 @@
 
 (define (app-!-o expr gamma type)
   (fresh (rator rands t*)
-    (== `(@ ,rator . ,rands) expr)
+    (== `(,rator . ,rands) expr)
     ;; Multi-argument
     (!-o rator gamma `(-> ,t* ,type) 'app-rator)
     (!-o-randso rands gamma t*)))
@@ -142,7 +142,7 @@
 (define (lookup-!-o x gamma type)
   (fresh (y t rest)
     (symbolo x)
-    (== `((,y . ,t) . ,rest) gamma)
+    (== `((,y ,t) . ,rest) gamma)
     (symbolo y)
     (conde
       ((== x y)
@@ -217,9 +217,8 @@
 
 (define empty-gamma '())
 
-;;; TODO
-(define (!-o expr type)
-  (type-expo expr empty-gamma type 'top-level))
+(define (type-expo expr type)
+  (!-o expr empty-gamma type 'top-level))
 
 (define (alist-ref alist element failure-result)
   (let ((pr (assoc element alist)))
@@ -231,7 +230,7 @@
       ((== '() gamma) k)
       ((fresh (y t rest)
          (symbolo x)
-         (== `((,y . ,t) . ,rest) gamma)
+         (== `((,y ,t) . ,rest) gamma)
          (symbolo y)
          (conde
            ((== x y)
@@ -243,18 +242,17 @@
            ((=/= x y)
             ((lookup-!-o-k k) x rest type))))))))
 
-;;; TODO
 (define build-and-run-conde
-  (lambda (expr gamma type list-of-eval-relations)
+  (lambda (expr gamma type list-of-!-o-relations)
     (let ((k (lambdag@ (st)
                (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
                           (lambdag@ (st)
-                            (let loop ((list-of-eval-relations list-of-eval-relations))
+                            (let loop ((list-of-!-o-relations list-of-!-o-relations))
                               (cond
-                                ((null? list-of-eval-relations) (mzero))
+                                ((null? list-of-!-o-relations) (mzero))
                                 (else
-                                 (mplus (((car list-of-eval-relations) expr gamma type) st)
-                                        (inc (loop (cdr list-of-eval-relations)))))))))))))
+                                 (mplus (((car list-of-!-o-relations) expr gamma type) st)
+                                        (inc (loop (cdr list-of-!-o-relations)))))))))))))
       (if lookup-optimization?
           ((lookup-!-o-k k) expr gamma type)
           k))))
