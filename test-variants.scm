@@ -30,8 +30,8 @@
 
                           
                           #| Combined evaluators/inferencers for ML-like language: |#
-                          
-                          "variant-expert-ordering-ml-interp-and-infer"
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-interp-and-infer"
+                          ;"variant-expert-ordering-ml-interp-and-infer"
 
                           
                           #| Type inferencers for ML-like language: |#
