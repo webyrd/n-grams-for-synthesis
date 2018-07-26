@@ -29,13 +29,15 @@
                           ;;; inferencers should be run separately.
 
 
+                          #| Type inferencers for ML-like language: |#
                           "variant-expert-ordering-ml-infer"
 
-                          
+
+
+                          #| Interpreters for ML-like language: |#
                           ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
                           ;"variant-dynamic-ordering-ml"
                           ;"variant-expert-ordering-with-application-and-lookup-optimizations-ml"
-
                           
                           #|
                           "variant-dynamic-ordering-with-application-optimization-ml"
@@ -44,6 +46,9 @@
                           "variant-expert-ordering-ml"                          
                           |#
 
+
+                          
+                          #| Interpreters for Schemely language: |#
                           
                           #|
                           "variant-expert-ordering-with-application-optimization"
