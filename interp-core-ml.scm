@@ -151,7 +151,9 @@
 
 (define (lookupo x env t)
   (fresh (y b rest)
+    (symbolo x)
     (== `((,y . ,b) . ,rest) env)
+    (symbolo y)
     (conde
       ((== x y)
        (conde
@@ -257,9 +259,9 @@
       ((== '() env) k)
       ((fresh (y b rest)
          (== `((,y . ,b) . ,rest) env)
+         (symbolo y)
          (conde
-           ((symbolo x)
-            (== x y)           
+           ((== x y)           
             (conde
               ((== `(val . ,t) b))
               ((fresh (lam-expr)

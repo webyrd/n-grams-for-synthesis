@@ -30,13 +30,16 @@
 
 
                           #| Type inferencers for ML-like language: |#
-                          "variant-expert-ordering-ml-infer"
-                          "variant-dynamic-ordering-ml-infer"
+                          ;"variant-expert-ordering-ml-infer"
+                          ;"variant-dynamic-ordering-ml-infer"
+                          ;"variant-dynamic-ordering-with-application-optimization-ml-infer"
 
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer"
 
                           
                           #| Interpreters for ML-like language: |#
-                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
+                          
+                          ; "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
                           ;"variant-dynamic-ordering-ml"
                           ;"variant-expert-ordering-with-application-and-lookup-optimizations-ml"
                           
@@ -52,9 +55,9 @@
                           #| Interpreters for Schemely language: |#
                           
                           #|
-                          "variant-expert-ordering-with-application-optimization"
                           "variant-expert-ordering-with-application-and-lookup-optimizations"
-                          
+                          "variant-expert-ordering-with-application-optimization"
+
                           "variant-barliman-interpreter"
                           "variant-barliman-interpreter-incomplete"
                           

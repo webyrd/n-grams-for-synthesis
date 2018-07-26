@@ -2,6 +2,53 @@
  ;; timeout in seconds
  10
 
+(test "23b"
+  (run* (q) (type-expo `(lambda (y) (cons 5 y)) q))
+  '(((-> ((list int)) (list int)))))
+
+(test "5"
+  (run* (q) (type-expo 3 q))
+  '((int)))
+
+(test "6"
+  (run* (q) (type-expo #f q))
+  '((bool)))
+
+(test "8a"
+  (run 1 (q) (type-expo `(cons 2 nil) q))
+  '(((list int))))
+
+(test "8b"
+  (run 10 (q) (type-expo `(cons 2 nil) q))
+  '(((list int))))
+
+(test "8c"
+  (run* (q) (type-expo `(cons 2 nil) q))
+  '(((list int))))
+
+(test "8"
+  (run* (q) (type-expo `(cons 2 43) q))
+  '())
+
+(test "ext-gamma-mono*o-1"
+  (run* (z t gamma)
+    (ext-gamma-mono*o `(,z) `(,t) '() gamma))
+  '(((_.0 _.1 ((_.0 (mono _.1)))) (sym _.0))))
+
+(test "!-o-lookupo-1"
+  (run* (z t gamma type)
+    (ext-gamma-mono*o `(,z) `(,t) '() gamma)
+    (lookup-!-o z gamma type))
+  '(((_.0 _.1 ((_.0 (mono _.1))) _.1) (sym _.0))))
+
+(test "id"
+  (run* (q) (type-expo `(lambda (x) x) q))
+  '(((-> (_.0) _.0))))
+
+(test "9"
+  (run* (q) (type-expo `((lambda (x) x) 3) q))
+  '((int)))
+
  (test "!o-if-1"
   (run* (q)
     (fresh (expr)
@@ -20,42 +67,6 @@
                4)
           expr)
       (type-expo expr q)))
-  '((int)))
-
-(test "5"
-  (run* (q) (type-expo 3 q))
-  '((int)))
-
-(test "6"
-  (run* (q) (type-expo #f q))
-  '((bool)))
-
-(test "8"
-  (run* (q) (type-expo `(cons 2 43) q))
-  '())
-
-(test "8b"
-  (run* (q) (type-expo `(cons 2 nil) q))
-  '(((list int))))
-
-(test "ext-gamma-mono*o-1"
-  (run* (z t gamma)
-    (ext-gamma-mono*o `(,z) `(,t) '() gamma))
-  '(((_.0 _.1 ((_.0 (mono _.1)))) (sym _.0))))
-
-(test "!-o-lookupo-1"
-  (run* (z t gamma type)
-    (ext-gamma-mono*o `(,z) `(,t) '() gamma)
-    (lookup-!-o z gamma type))
-  '(((_.0 _.1 ((_.0 (mono _.1))) _.1) (sym _.0))))
-
-
-(test "id"
-  (run* (q) (type-expo `(lambda (x) x) q))
-  '(((-> (_.0) _.0))))
-
-(test "9"
-  (run* (q) (type-expo `((lambda (x) x) 3) q))
   '((int)))
 
 (test "10"
@@ -103,10 +114,6 @@
 (test "23a"
   (run* (q) (type-expo `(lambda (x y) (cons x y)) q))
   '(((-> (_.0 (list _.0)) (list _.0)))))
-
-(test "23b"
-  (run* (q) (type-expo `(lambda (y) (cons 5 y)) q))
-  '(((-> ((list int)) (list int)))))
 
 (test "23"
   (run* (q) (type-expo `(lambda (y) (cons #f y)) q))
@@ -185,7 +192,7 @@
                             rev))
                        q))
   '(((-> ((list _.0)) (list _.0)))))
- 
+
  )
 
 (exit)

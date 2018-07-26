@@ -229,7 +229,6 @@
     (conde
       ((== '() gamma) k)
       ((fresh (y t rest)
-         (symbolo x)
          (== `((,y ,t) . ,rest) gamma)
          (symbolo y)
          (conde
