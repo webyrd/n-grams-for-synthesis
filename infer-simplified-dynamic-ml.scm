@@ -32,25 +32,25 @@
                       (lambda (a b)
                         (> (alist-ref ctx-stats (car a) 0)
                            (alist-ref ctx-stats (car b) 0)))))
-                (map cdr (list-sort compare expert-ordering-alist-ml)))))))
+                (map cdr (list-sort compare expert-ordering-alist-ml-infer)))))))
     (map (lambda (ctx)
            (cons ctx (ordering-for-context ctx)))
          all-contexts)))
 
-;; context -> list of eval-relations
-(define order-eval-relations
+;; context -> list of !-o-relations
+(define order-!-o-relations
   (lambda (context)
     (cond
       ((assoc context orderings-alist) => cdr)
       (else
-        ;(error 'eval-expo (string-append "bad context " (symbol->string context)))
+        ;(error '!-o (string-append "bad context " (symbol->string context)))
 
         ; symbol? doesn't appear in the data, so we'll return the expert ordering
         ; for such cases.
-        expert-ordering-ml))))
+        expert-ordering-ml-infer))))
 
-(define (eval-expo expr env val context)
-  (build-and-run-conde expr env val
-                       (order-eval-relations context)
+(define (!-o expr gamma type context)
+  (build-and-run-conde expr gamma type
+                       (order-!-o-relations context)
                        ;expert-ordering
                        ))

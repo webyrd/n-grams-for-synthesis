@@ -22,5 +22,5 @@
 
 (define expert-ordering-ml-infer
   (map cdr (if lookup-optimization?
-               (remove (assq 'var expert-ordering-alist) expert-ordering-alist-ml-infer)
+               (remove (assq 'var expert-ordering-alist-ml-infer) expert-ordering-alist-ml-infer)
                expert-ordering-alist-ml-infer)))
