@@ -124,9 +124,20 @@
                        q))
   '(((-> ((list bool)) (list bool)))))
 
-(test "26"
+(test-p "26"
   (run 1 (q) (type-expo `(lambda (x) ,q) `(-> (bool) bool)))
-  '((#t)))
+  (one-of?
+    '((#t)
+      ;;; hmmm--should ((x)) be considered correct?
+      ((x)))))
+
+(test "26b"
+  (run 1 (expr)
+    (fresh (body)
+      (== `(lambda (x) ,body) expr)
+      (type-expo expr `(-> (bool) bool))
+      (type-expo expr `(-> (int) int))))
+  '(((lambda (x) x))))
 
 (test "27"
   (run* (q) (type-expo `(lambda (x) x) q))
