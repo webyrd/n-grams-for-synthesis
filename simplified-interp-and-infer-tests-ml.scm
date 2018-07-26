@@ -2,6 +2,410 @@
  ;; timeout in seconds
  10
 
+  (test "append-infer-and-eval-with-append-18"
+    (run 1 (prog)
+      (fresh (expr q clos)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)        
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (pair
+                append
+                (list (append nil nil)
+                      (append (cons 1 nil) (cons 2 nil))
+                      (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+            expr)
+        (type-expo
+         expr
+         `(pair (-> ((list int) (list int)) (list int))
+                (list (list int))))
+        (evalo
+         expr
+         `(pair (closure . ,clos)
+                (nil
+                 (cons 1 (cons 2 nil))
+                 (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+    (test "append-eval-and-infer-with-append-18"
+    (run 1 (prog)
+      (fresh (expr q clos)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)        
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (pair
+                append
+                (list (append nil nil)
+                      (append (cons 1 nil) (cons 2 nil))
+                      (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+            expr)
+        (evalo
+         expr
+         `(pair (closure . ,clos)
+                (nil
+                 (cons 1 (cons 2 nil))
+                 (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))
+        (type-expo
+         expr
+         `(pair (-> ((list int) (list int)) (list int))
+                (list (list int))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+ 
+ (test "infer-list-1"
+   (run* (type)
+     (type-expo '(list) type))
+   '(((list _.0))))
+
+ (test "infer-list-2"
+   (run* (type)
+     (type-expo '(list 5) type))
+   '(((list int))))
+
+ (test "infer-null?-1"
+   (run* (type)
+     (type-expo '(null? nil) type))
+   '((bool)))
+
+  (test "append-infer--EZ"
+    (run* (type)
+      (fresh (expr)
+        (== `(letrec ((append (lambda (l s)
+                                (if (null? l)
+                                    s
+                                    (cons (car l) (append (cdr l) s))))))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         type)))
+    '(((list (list int)))))
+ 
+  (test "append-infer-with-append-EZ"
+    (run* (type)
+      (fresh (expr)
+        (== `(letrec ((append (lambda (l s)
+                                (if (null? l)
+                                    s
+                                    (cons (car l) (append (cdr l) s))))))
+               (pair
+                append
+                (list (append nil nil)
+                      (append (cons 1 nil) (cons 2 nil))
+                      (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+            expr)
+        (type-expo
+         expr
+         type)))
+    '(((pair (-> ((list int) (list int)) (list int))
+             (list (list int))))))
+ 
+  (test "append-infer-with-append-18"
+    (run 1 (prog type)
+      (fresh (expr q clos)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)        
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (pair
+                append
+                (list (append nil nil)
+                      (append (cons 1 nil) (cons 2 nil))
+                      (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+            expr)
+        (type-expo
+         expr
+         type)))
+   '((((lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s))))
+       (pair (-> ((list int) (list int)) (list int))
+             (list (list int)))))))
+ 
+  (test "append-eval-with-append-18"
+    (run 1 (prog)
+      (fresh (expr q clos)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)        
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (pair
+                append
+                (list (append nil nil)
+                      (append (cons 1 nil) (cons 2 nil))
+                      (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+            expr)
+        (evalo
+         expr
+         `(pair (closure . ,clos)
+                (nil
+                 (cons 1 (cons 2 nil))
+                 (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+      
+  (test "append-infer-and-eval-18-trivial"
+    (run 1 (prog)
+      (fresh (expr q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if (null? l)
+                   s
+                   (cons (car l) (append (cdr l) s))))
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         `(list (list int)))
+        (evalo
+         expr
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+  
+  (test "append-infer-18-trivial-2"
+    (run 1 (prog)
+      (fresh (expr q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if (null? l)
+                   s
+                   (cons (car l) (append (cdr l) s))))
+            prog)        
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         `(list (list int)))))
+   '(((lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))))  
+  
+  (test "append-eval-18"
+    (run 1 (prog)
+      (fresh (q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+  (test "append-infer-18-trivial-1"
+    (run 1 (prog type)
+      (fresh (expr q any)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if (null? l)
+                   s
+                   (cons (car l) (append (cdr l) s))))
+            prog)        
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         type)))
+   '((((lambda (l s)
+         (if (null? l)
+             s
+             (cons (car l) (append (cdr l) s))))
+       (list (list int))))))
+      
+  (test "append-infer-18"
+    (run 1 (prog)
+      (fresh (expr q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         `(list (list int)))))
+   '??)
+  
+  (test "append-infer-and-eval-18"
+    (run 1 (prog)
+      (fresh (expr q)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (type-expo
+         expr
+         `(list (list int)))
+        (evalo
+         expr
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+  (test "append-eval-and-infer-18"
+    (run 1 (prog)
+      (fresh (expr q any)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               ,q)
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (evalo
+         expr
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))
+        (type-expo
+         expr
+         `((list ,any)
+           (list int)
+           (list int)))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+  (test "append-eval-19"
+    (run 1 (prog)
+      (fresh (q r)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda ,q
+               ,r)
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+   '(((lambda (_.0 _.1)
+        (if (null? _.0)
+            _.1
+            (cons (car _.0) (append (cdr _.0) _.1))))
+      (=/= ((_.0 _.1)) ((_.0 append)) ((_.1 append)))
+      (sym _.0 _.1))))
+
+ 
  (test "bool-eval-0"
    (run* (q)
      (evalo
@@ -523,60 +927,6 @@
         (if (null? l)
             s
             (cons (car l) (append (cdr l) s)))))))
-
-  (test "append-eval-18"
-    (run 1 (prog)
-      (fresh (q)
-        (absento 1 prog)
-        (absento 2 prog)
-        (absento 3 prog)
-        (absento 4 prog)
-        (absento 5 prog)
-        (absento 6 prog)
-        (== `(lambda (l s)
-               ,q)
-            prog)
-        (evalo
-         `(letrec ((append ,prog))
-            (list
-             (append nil nil)
-             (append (cons 1 nil) (cons 2 nil))
-             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
-         '(nil
-           (cons 1 (cons 2 nil))
-           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
-   '(((lambda (l s)
-        (if (null? l)
-            s
-            (cons (car l) (append (cdr l) s)))))))
-
-  (test "append-eval-19"
-    (run 1 (prog)
-      (fresh (q r)
-        (absento 1 prog)
-        (absento 2 prog)
-        (absento 3 prog)
-        (absento 4 prog)
-        (absento 5 prog)
-        (absento 6 prog)
-        (== `(lambda ,q
-               ,r)
-            prog)
-        (evalo
-         `(letrec ((append ,prog))
-            (list
-             (append nil nil)
-             (append (cons 1 nil) (cons 2 nil))
-             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
-         '(nil
-           (cons 1 (cons 2 nil))
-           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
-   '(((lambda (_.0 _.1)
-        (if (null? _.0)
-            _.1
-            (cons (car _.0) (append (cdr _.0) _.1))))
-      (=/= ((_.0 _.1)) ((_.0 append)) ((_.1 append)))
-      (sym _.0 _.1))))
 
 
   ;; stutter example taken from 'Type-and-Example-Directed Program Synthesis' by
