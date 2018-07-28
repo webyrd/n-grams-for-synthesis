@@ -119,7 +119,153 @@
           (if (null? l)
               s
               (cons (car l) ((append (cdr l)) s))))))))
- 
+
+  (test "append-eval-only-15"
+    (run 1 (prog)
+      (fresh (q r s t)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) (append ,t s))))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+    '(((lambda (l s)
+         (if (null? l)
+             s
+             (cons (car l) (append (cdr l) s)))))))
+
+  (test "append-eval-only-curried-15"
+    (run 1 (prog)
+      (fresh (q r s t)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l)
+               (lambda (s)
+                 (if ,q
+                     ,r
+                     (,s (car l) ((append ,t) s)))))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             ((append nil) nil)
+             ((append (cons 1 nil)) (cons 2 nil))
+             ((append (cons 3 (cons 4 nil))) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+    '(((lambda (l)
+         (lambda (s)
+           (if (null? l)
+               s
+               (cons (car l) ((append (cdr l)) s))))))))
+
+  (test "append-eval-only-cons-no-list-15"
+    (run 1 (prog)
+      (fresh (q r s t)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) (append ,t s))))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (cons (append nil nil)
+                  (cons (append (cons 1 nil) (cons 2 nil))
+                        (cons (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))
+                              nil))))
+         '(cons nil
+                (cons (cons 1 (cons 2 nil))
+                      (cons (cons 3 (cons 4 (cons 5 (cons 6 nil))))
+                            nil))))))
+    '(((lambda (l s)
+         (if (null? l)
+             s
+             (cons (car l) (append (cdr l) s)))))))
+
+  (test "append-eval-only-curried-cons-no-list-15"
+    (run 1 (prog)
+      (fresh (q r s t)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l)
+               (lambda (s)
+                 (if ,q
+                     ,r
+                     (,s (car l) ((append ,t) s)))))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (cons ((append nil) nil)
+                  (cons ((append (cons 1 nil)) (cons 2 nil))
+                        (cons ((append (cons 3 (cons 4 nil))) (cons 5 (cons 6 nil)))
+                              nil))))
+         '(cons nil
+                (cons (cons 1 (cons 2 nil))
+                      (cons (cons 3 (cons 4 (cons 5 (cons 6 nil))))
+                            nil))))))
+    '(((lambda (l)
+         (lambda (s)
+           (if (null? l)
+               s
+               (cons (car l) ((append (cdr l)) s))))))))
+    
+  (test "append-eval-only-16"
+    (run 1 (prog)
+      (fresh (q r s t)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) ,t)))
+            prog)
+        (evalo
+         `(letrec ((append ,prog))
+            (list
+             (append nil nil)
+             (append (cons 1 nil) (cons 2 nil))
+             (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+         '(nil
+           (cons 1 (cons 2 nil))
+           (cons 3 (cons 4 (cons 5 (cons 6 nil))))))))
+    '(((lambda (l s)
+         (if (null? l)
+             s
+             (cons (car l) (append (cdr l) s)))))))
+  
  (test "append-eval-only-cons-no-list-16"
    (run 1 (prog)
      (fresh (q r s t)
