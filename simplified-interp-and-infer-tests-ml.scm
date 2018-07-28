@@ -1,6 +1,72 @@
 (test-runner
  ;; timeout in seconds
  10
+
+ (test "append-infer-and-eval-with-append-14"
+   (run 1 (prog)
+     (fresh (expr q r s clos)
+       (absento 1 prog)
+       (absento 2 prog)
+       (absento 3 prog)
+       (absento 4 prog)
+       (absento 5 prog)
+       (absento 6 prog)       
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (,s (car l) (append (cdr l) s))))
+           prog)
+       (== `(letrec ((append ,prog))
+              (pair append
+                    (list (append nil nil)
+                          (append (cons 1 nil) (cons 2 nil))
+                          (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+           expr)
+       (type-expo
+        expr
+        `(pair (-> ((list int) (list int)) (list int))
+               (list (list int))))
+       (evalo
+        expr
+        `(pair (closure . ,clos)
+               (nil
+                (cons 1 (cons 2 nil))
+                (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s)))))))
+
+ (test "append-eval-only-with-append-14"
+   (run 1 (prog)
+     (fresh (expr q r s clos)
+       (absento 1 prog)
+       (absento 2 prog)
+       (absento 3 prog)
+       (absento 4 prog)
+       (absento 5 prog)
+       (absento 6 prog)       
+       (== `(lambda (l s)
+              (if ,q
+                  ,r
+                  (,s (car l) (append (cdr l) s))))
+           prog)
+       (== `(letrec ((append ,prog))
+              (pair append
+                    (list (append nil nil)
+                          (append (cons 1 nil) (cons 2 nil))
+                          (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil))))))
+           expr)
+       (evalo
+        expr
+        `(pair (closure . ,clos)
+               (nil
+                (cons 1 (cons 2 nil))
+                (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+   '(((lambda (l s)
+        (if (null? l)
+            s
+            (cons (car l) (append (cdr l) s))))))) 
  
  (test "append-eval-only-14"
    (run 1 (prog)
