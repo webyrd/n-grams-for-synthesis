@@ -2,6 +2,397 @@
  ;; timeout in seconds
  10
 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-eval-only-curried-cons-no-list"
+    (run 1 (defn val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+        
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   ((append (reverse (cdr xs))) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l)
+                                (lambda (s)
+                                  (if (null? l)
+                                      s
+                                      (cons (car l)
+                                            ((append (cdr l)) s)))))))
+               (letrec ((reverse ,defn))
+                 (cons (reverse nil)
+                       (cons (reverse (cons 1 nil))
+                             (cons (reverse (cons 2 (cons 3 nil)))
+                                   (cons (reverse (cons 4 (cons 5 (cons 6 nil))))
+                                         nil))))))
+            prog)
+
+        (== '(cons nil
+                   (cons (cons 1 nil)
+                         (cons (cons 3 (cons 2 nil))
+                               (cons (cons 6 (cons 5 (cons 4 nil)))
+                                     nil))))
+            val)
+        
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs)
+          (if (null? xs)
+              nil
+              ((append (reverse (cdr xs))) (cons (car xs) nil))))
+        (cons nil
+              (cons (cons 1 nil)
+                    (cons (cons 3 (cons 2 nil))
+                          (cons (cons 6 (cons 5 (cons 4 nil)))
+                                nil))))))))
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-with-type-and-eval-curried-cons-no-list"
+    (run 1 (defn type val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+        
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   ((append (reverse (cdr xs))) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l)
+                                (lambda (s)
+                                  (if (null? l)
+                                      s
+                                      (cons (car l)
+                                            ((append (cdr l)) s)))))))
+               (letrec ((reverse ,defn))
+                 (cons (reverse nil)
+                       (cons (reverse (cons 1 nil))
+                             (cons (reverse (cons 2 (cons 3 nil)))
+                                   (cons (reverse (cons 4 (cons 5 (cons 6 nil))))
+                                         nil))))))
+            prog)
+
+        (== `(list (list int)) type)
+        (== '(cons nil
+                   (cons (cons 1 nil)
+                         (cons (cons 3 (cons 2 nil))
+                               (cons (cons 6 (cons 5 (cons 4 nil)))
+                                     nil))))
+            val)
+        
+        (type-expo prog type)
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs)
+          (if (null? xs)
+              nil
+              ((append (reverse (cdr xs))) (cons (car xs) nil))))
+        (list (list int))
+        (cons nil
+              (cons (cons 1 nil)
+                    (cons (cons 3 (cons 2 nil))
+                          (cons (cons 6 (cons 5 (cons 4 nil)))
+                                nil))))))))
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-eval-only-cons-no-list"
+    (run 1 (defn val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+        
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   (append (reverse (cdr xs)) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l s)
+                                (if (null? l)
+                                    s
+                                    (cons (car l)
+                                          (append (cdr l) s))))))
+               (letrec ((reverse ,defn))
+                 (cons (reverse nil)
+                       (cons (reverse (cons 1 nil))
+                             (cons (reverse (cons 2 (cons 3 nil)))
+                                   (cons (reverse (cons 4 (cons 5 (cons 6 nil))))
+                                         nil))))))
+            prog)
+
+        (== '(cons nil
+                   (cons (cons 1 nil)
+                         (cons (cons 3 (cons 2 nil))
+                               (cons (cons 6 (cons 5 (cons 4 nil)))
+                                     nil))))
+            val)
+        
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+        (cons nil
+              (cons (cons 1 nil)
+                    (cons (cons 3 (cons 2 nil))
+                          (cons (cons 6 (cons 5 (cons 4 nil)))
+                                nil))))))))
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-eval-only-curried"
+    (run 1 (defn val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+        
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   ((append (reverse (cdr xs))) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l)
+                                (lambda (s)
+                                  (if (null? l)
+                                      s
+                                      (cons (car l)
+                                            ((append (cdr l)) s)))))))
+               (letrec ((reverse ,defn))
+                 (list (reverse nil)
+                       (reverse (cons 1 nil))
+                       (reverse (cons 2 (cons 3 nil)))
+                       (reverse (cons 4 (cons 5 (cons 6 nil)))))))
+            prog)
+
+        (== `(nil
+              (cons 1 nil)
+              (cons 3 (cons 2 nil))
+              (cons 6 (cons 5 (cons 4 nil))))
+            val)
+        
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs)
+          (if (null? xs)
+              nil
+              ((append (reverse (cdr xs))) (cons (car xs) nil))))
+        (nil
+         (cons 1 nil)
+         (cons 3 (cons 2 nil))
+         (cons 6 (cons 5 (cons 4 nil))))))))
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-with-type-and-eval-curried"
+    (run 1 (defn type val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   ((append (reverse (cdr xs))) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l)
+                                (lambda (s)
+                                  (if (null? l)
+                                      s
+                                      (cons (car l)
+                                            ((append (cdr l)) s)))))))
+               (letrec ((reverse ,defn))
+                 (list (reverse nil)
+                       (reverse (cons 1 nil))
+                       (reverse (cons 2 (cons 3 nil)))
+                       (reverse (cons 4 (cons 5 (cons 6 nil)))))))
+            prog)
+
+        (== `(list (list int)) type)
+        (== `(nil
+              (cons 1 nil)
+              (cons 3 (cons 2 nil))
+              (cons 6 (cons 5 (cons 4 nil))))
+            val)
+        
+        (type-expo prog type)
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+        (list (list int))
+        (nil
+         (cons 1 nil)
+         (cons 3 (cons 2 nil))
+         (cons 6 (cons 5 (cons 4 nil))))))))
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-with-type-and-eval-cons-no-list"
+    (run 1 (defn type val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   (append (reverse (cdr xs)) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l s)
+                                (if (null? l)
+                                    s
+                                    (cons (car l)
+                                          (append (cdr l) s))))))
+               (letrec ((reverse ,defn))
+                 (cons (reverse nil)
+                       (cons (reverse (cons 1 nil))
+                             (cons (reverse (cons 2 (cons 3 nil)))
+                                   (cons (reverse (cons 4 (cons 5 (cons 6 nil))))
+                                         nil))))))
+            prog)
+
+        (== `(list (list int)) type)
+        (== '(cons nil
+                   (cons (cons 1 nil)
+                         (cons (cons 3 (cons 2 nil))
+                               (cons (cons 6 (cons 5 (cons 4 nil)))
+                                     nil))))
+            val)
+        
+        (type-expo prog type)
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+        (list (list int))
+        (nil
+         (cons 1 nil)
+         (cons 3 (cons 2 nil))
+         (cons 6 (cons 5 (cons 4 nil))))))))
+
+
+ 
+ (test "reverse-illtyped-simple-hole-synthesis-1e-with-type-and-eval"
+    (run 1 (defn type val)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   (append (reverse (cdr xs)) ,q)))
+            defn)
+
+        (== `(letrec ((append (lambda (l s)
+                                (if (null? l)
+                                    s
+                                    (cons (car l)
+                                          (append (cdr l) s))))))
+               (letrec ((reverse ,defn))
+                 (list (reverse nil)
+                       (reverse (cons 1 nil))
+                       (reverse (cons 2 (cons 3 nil)))
+                       (reverse (cons 4 (cons 5 (cons 6 nil)))))))
+            prog)
+
+        (== `(list (list int)) type)
+        (== `(nil
+              (cons 1 nil)
+              (cons 3 (cons 2 nil))
+              (cons 6 (cons 5 (cons 4 nil))))
+            val)
+        
+        (type-expo prog type)
+        (evalo prog val)
+
+        ))
+    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+        (list (list int))
+        (nil
+         (cons 1 nil)
+         (cons 3 (cons 2 nil))
+         (cons 6 (cons 5 (cons 4 nil))))))))
+
+(test "reverse-illtyped-simple-hole-synthesis-1e-with-eval-only"
+    (run 1 (defn)
+      (fresh (q r s prog)
+        (absento 1 defn)
+        (absento 2 defn)
+        (absento 3 defn)
+        (absento 4 defn)
+        (absento 5 defn)
+        (absento 6 defn)
+
+        (== `(lambda (xs)
+               (if (null? xs)
+                   nil
+                   (@ (@ append (@ reverse (cdr xs))) ,q)))
+            defn)
+
+        (== `(let-poly ((append (lambda (l)
+                                  (lambda (s)
+                                    (if (null? l) s
+                                        (cons (car l)
+                                              (@ (@ append (cdr l)) s)))))))
+               (let-poly ((reverse ,defn))
+                 (cons (@ reverse nil)
+                       (cons (@ reverse (cons 1 nil))
+                             (cons (@ reverse (cons 2 (cons 3 nil)))
+                                   (cons (@ reverse (cons 4 (cons 5 (cons 6 nil))))
+                                         nil))))))
+            prog)
+
+        (evalo '()
+               prog
+               '(cons nil (cons (cons 1 nil) (cons (cons 3 (cons 2 nil)) (cons (cons 6 (cons 5 (cons 4 nil))) nil)))))))    
+    '((lambda (xs)
+        (if (null? xs)
+            nil
+            (@ (@ append (@ reverse (cdr xs))) (cons (car xs) nil))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
  (test "append-eval-without-append-12"
     (run 1 (prog)
       (fresh (expr q r s clos)
