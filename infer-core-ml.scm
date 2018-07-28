@@ -73,41 +73,42 @@
 
 (define (letrec-!-o expr gamma type)
   ;; our letrec is polymorphic
-  (fresh (p-name x body letrec-body t)
-    ;; single-function curried letrec version
-    (== `(letrec ((,p-name (lambda (,x) ,body)))
+  (fresh (p-name x* body letrec-body t)
+    ;; single-function muti-argument letrec version
+    (== `(letrec ((,p-name (lambda ,x* ,body)))
            ,letrec-body)
         expr)
     (symbolo p-name)
-    (symbolo x)
+    (list-of-symbolso-ml-infer x*)
 
    ;; Make sure the right-hand-side of the polymorphic 'letrec'
    ;; binding has a type, but then forget about the type.
    (fresh (forget-me)     
-     (!-o `(lambda (,x) ,body)
+     (!-o `(lambda ,x* ,body)
           `((,p-name (mono ,forget-me)) . ,gamma)
           forget-me
           'letrec-rhs))
    
    (!-o letrec-body
         `((,p-name (poly ((,p-name (mono ,t)) . ,gamma)
-                         (lambda (,x) ,body)))
+                         (lambda ,x* ,body)))
           . ,gamma)
         type
         'letrec-body)))
 
 (define (lambda-!-o expr gamma type)
-  (fresh (x body t t^ gamma^)
-    (== `(lambda (,x) ,body) expr)
-    (== `(-> ,t ,t^) type)
-    (!-o body `((,x (mono ,t)) . ,gamma) t^ 'lambda-body)))
+  (fresh (x* body t* t^ gamma^)
+    (== `(lambda ,x* ,body) expr)
+    (== `(-> ,t* ,t^) type)
+    (ext-gamma-mono*o x* t* gamma gamma^)
+    (!-o body gamma^ t^ 'lambda-body)))
 
 (define (app-!-o expr gamma type)
-  (fresh (rator rand t)
-    (== `(,rator ,rand) expr)
-    ;; curried
-    (!-o rator gamma `(-> ,t ,type) 'app-rator)
-    (!-o rand gamma t)))
+  (fresh (rator rands t*)
+    (== `(,rator . ,rands) expr)
+    ;; Multi-argument
+    (!-o rator gamma `(-> ,t* ,type) 'app-rator)
+    (!-o-randso rands gamma t*)))
 
 (define (equal?-!-o expr gamma type)
   (fresh (e1 e2 t)
@@ -115,6 +116,24 @@
     (== 'bool type)
     (!-o e1 gamma t 'equal?-e1)
     (!-o e2 gamma t 'equal?-e2)))
+
+(define (and-!-o expr gamma type)
+  (fresh (e*)
+    (== `(and . ,e*) expr)
+    (== 'bool type)
+    (!-o-ando e* gamma)))
+
+(define (or-!-o expr gamma type)
+  (fresh (e*)
+    (== `(or . ,e*) expr)
+    (== 'bool type)
+    (!-o-oro e* gamma)))
+
+(define (list-!-o expr gamma type)
+  (fresh (rands a)
+    (== `(list . ,rands) expr)
+    (== `(list ,a) type)
+    (!-o-listo rands gamma a)))
 
 (define (symbol?-!-o expr gamma type)
   (fresh (e t)
@@ -131,7 +150,7 @@
 
 
 (define (lookup-!-o x gamma type)
-  (fresh (y t rest gamma^ x body)
+  (fresh (y t rest)
     (symbolo x)
     (== `((,y ,t) . ,rest) gamma)
     (symbolo y)
@@ -139,10 +158,70 @@
       ((== x y)
        (conde
          ((== `(mono ,type) t))
-         ((== `(poly ,gamma^ (lambda (,x) ,body)) t)
-          (!-o `(lambda (,x) ,body) gamma^ type 'letrec-rhs))))
+         ((fresh (gamma^ x* body)
+            (== `(poly ,gamma^ (lambda ,x* ,body)) t)
+            (!-o `(lambda ,x* ,body) gamma^ type 'letrec-rhs)))))
       ((=/= x y)
        (lookup-!-o x rest type)))))
+
+
+(define (!-o-randso expr* gamma type*)
+  (conde
+    ((== '() expr*)
+     (== '() type*))
+    ((fresh (a d t-a t-d)
+       (== `(,a . ,d) expr*)
+       (== `(,t-a . ,t-d) type*)
+       (!-o a gamma t-a 'app-rand*)
+       (!-o-randso d gamma t-d)))))
+
+(define (!-o-listo expr gamma type)
+  (conde
+    ((== '() expr)
+     ;; 'any' type
+     )
+    ((fresh (e1 e2)
+       (== `(,e1 . ,e2) expr)
+       (!-o e1 gamma type 'list)
+       (!-o-listo e2 gamma type)))))
+
+;; need to make sure lambdas are well formed.
+;; grammar constraints would be useful here!!!
+(define (list-of-symbolso-ml-infer los)
+  (conde
+    ((== '() los))
+    ((fresh (a d)
+       (== `(,a . ,d) los)
+       (symbolo a)
+       (list-of-symbolso-ml-infer d)))))
+
+(define (ext-gamma-mono*o x* t* gamma out)
+  (conde
+    ((== '() x*) (== '() t*) (== gamma out))
+    ((fresh (x t dx* dt* gamma2)
+       (== `(,x . ,dx*) x*)
+       (== `(,t . ,dt*) t*)
+       (== `((,x (mono ,t)) . ,gamma) gamma2)
+       (symbolo x)
+       (ext-gamma-mono*o dx* dt* gamma2 out)))))
+
+
+(define (!-o-ando e* gamma)
+  (conde
+    ((== '() e*))
+    ((fresh (e e-rest)
+       (== `(,e . ,e-rest) e*)
+       (!-o e gamma 'bool 'and)
+       (!-o-ando e-rest gamma)))))
+
+(define (!-o-oro e* gamma)
+  (conde
+    ((== '() e*))
+    ((fresh (e e-rest)
+       (== `(,e . ,e-rest) e*)
+       (!-o e gamma 'bool 'or)
+       (!-o-oro e-rest gamma)))))
+
 
 
 
@@ -164,7 +243,7 @@
 ;;;
 ;;; (Is there a better way to write this???)
 (define (lookup-!-o-k k)
-  (lambda (x gamma type gamma^ x body)
+  (lambda (x gamma type)
     (conde
       ((== '() gamma) k)
       ((fresh (y t rest)
@@ -174,8 +253,9 @@
            ((== x y)
             (conde
               ((== `(mono ,type) t))
-              ((== `(poly ,gamma^ (lambda (,x) ,body)) t)
-               (!-o `(lambda (,x) ,body) gamma^ type 'letrec-rhs))))
+              ((fresh (gamma^ x* body)
+                 (== `(poly ,gamma^ (lambda ,x* ,body)) t)
+                 (!-o `(lambda ,x* ,body) gamma^ type 'letrec-rhs)))))
            ((=/= x y)
             ((lookup-!-o-k k) x rest type))))))))
 
