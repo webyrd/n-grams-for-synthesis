@@ -239,7 +239,7 @@
         (evalo prog val)
 
         ))
-    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+    '((((lambda (xs) (if (null? xs) nil ((append (reverse (cdr xs))) (cons (car xs) nil))))
         (list (list int))
         (nil
          (cons 1 nil)
@@ -284,7 +284,7 @@
         (evalo prog val)
 
         ))
-    '((((lambda (xs) (if (null? xs) nil (append (reverse (cdr xs)) (cons (car xs) nil))))
+    '((((lambda (xs) (if (null? xs) nil ((append (reverse (cdr xs))) (cons (car xs) nil))))
         (nil
          (cons 1 nil)
          (cons 3 (cons 2 nil))
