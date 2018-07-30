@@ -19,7 +19,7 @@
 
 
 (define variants-to-run '(
-
+                          
                           ;;; !!! IMPORTANT !!!
                           ;;;
                           ;;; Interpreters for ML-like languages
@@ -36,7 +36,7 @@
                           
                           
                           #| Combined evaluators/inferencers for ML-like language: |#
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-interp-and-infer"
+                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-interp-and-infer"
                           ;"variant-dynamic-ordering-ml-interp-and-infer"
                           ;"variant-expert-ordering-ml-interp-and-infer"
 
@@ -133,12 +133,34 @@
                "\n"))
             summary))))
 
+(define to-csv-tidy
+  (lambda (summary)
+    (let ((variant-names (cdar summary)))
+      (let ((tests (cdr summary)))
+        (apply string-append
+               (cons
+                (string-append "test-name" ", " "variant-name" "," "time" "\n")
+                (map
+                 (lambda (test)
+                   (let ((test-name (car test))
+                         (variant-times (cdr test)))
+                     (apply string-append
+                            (map
+                             (lambda (variant-name variant-time)
+                               (string-append test-name ", " variant-name ", " variant-time "\n"))
+                             variant-names
+                             variant-times))))
+                 tests)))))))
+
 (define summary-csv (to-csv summary-scm))
+
+(define summary-csv-tidy (to-csv-tidy summary-scm))
 
 (write-data-to-file summary-scm "tmp/summary.scm")
 
 (display-data-to-file summary-csv "tmp/summary.csv")
 
+(display-data-to-file summary-csv-tidy "tmp/summary-tidy.csv")
 
 (exit)
 
