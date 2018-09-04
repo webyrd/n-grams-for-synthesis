@@ -10,8 +10,34 @@
 
 
 ;; append->fold-right
+;; TODO build up to full synthesis
 
-(test "append->fold-right"
+(test "append->fold-right-0"
+  (run 1 (defn)
+    (fresh (body)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+      (== defn `(fold-right (lambda (f acc xs)
+                              (if (null? xs)
+                                  acc
+                                  (f (car xs)
+                                     (fold-right f acc (cdr xs)))))))
+      (evalo
+       `(letrec (,defn)
+          (letrec ((append
+                    (lambda (xs ys)
+                      (fold-right (lambda (a d) (cons a d)) ys xs))))
+            (list (append '() '())
+                  (append '(1) '(2))
+                  (append '(3 4) '(5 6)))))
+       `(() (1 2) (3 4 5 6)))))
+  '(((fold-right (lambda (f acc xs) (if (null? xs) acc (f (car xs) (fold-right f acc (cdr xs)))))))))
+ 
+(test "append->fold-right-full"
   (run 1 (defn)
     (fresh (body)
       (absento 1 defn)
@@ -25,7 +51,7 @@
        `(letrec (,defn)
           (letrec ((append
                     (lambda (xs ys)
-                      (fold-right cons ys xs))))
+                      (fold-right (lambda (a d) (cons a d)) ys xs))))
             (list (append '() '())
                   (append '(1) '(2))
                   (append '(3 4) '(5 6)))))
@@ -75,7 +101,7 @@
 
 
 ;; interleave
-
+;;; TODO -- build up to full synthesis
  (test "interleave-0"
   (run 1 (defn)
     (let ((g1 (gensym "g1"))
@@ -85,7 +111,7 @@
           (g5 (gensym "g5"))
           (g6 (gensym "g6"))
           (g7 (gensym "g7")))
-      (fresh (q)
+      (fresh ()
         (absento g1 defn)
         (absento g2 defn)
         (absento g3 defn)
@@ -93,10 +119,12 @@
         (absento g5 defn)
         (absento g6 defn)
         (absento g7 defn)
-        (evalo `(letrec ((interleave (lambda (l1 l2)
-                                       (if (null? l2)
-                                           l1
-                                           (cons (car l1) (interleave l2 (cdr l1)))))))
+        (== `(lambda (l1 l2)
+               (if (null? l2)
+                   l1
+                   (cons (car l1) (interleave l2 (cdr l1)))))
+            defn)
+        (evalo `(letrec ((interleave ,defn))
                   (list
                     (interleave '() '())
                     (interleave '(,g1) '(,g2))
@@ -104,11 +132,47 @@
                (list
                 '()
                 `(,g1 ,g2)
-                `(,g3 ,g4 ,g5 ,g6))))))
-  '((lambda (l1 l2)
-      (if (null? l2)
-          l1
-          (cons (car l1) (interleave l2 (cdr l1)))))))
+                `(,g3 ,g5 ,g4 ,g6))))))
+  '(((lambda (l1 l2)
+       (if (null? l2)
+           l1
+           (cons (car l1) (interleave l2 (cdr l1))))))))
+
+ (test "interleave-1"
+   (run 1 (defn)
+     (let ((g1 (gensym "g1"))
+           (g2 (gensym "g2"))
+           (g3 (gensym "g3"))
+           (g4 (gensym "g4"))
+           (g5 (gensym "g5"))
+           (g6 (gensym "g6"))
+           (g7 (gensym "g7")))
+       (fresh (a)
+         (absento g1 defn)
+         (absento g2 defn)
+         (absento g3 defn)
+         (absento g4 defn)
+         (absento g5 defn)
+         (absento g6 defn)
+         (absento g7 defn)
+         (== `(lambda (l1 l2)
+                (if (null? ,a)
+                    l1
+                    (cons (car l1) (interleave l2 (cdr l1)))))
+             defn)
+         (evalo `(letrec ((interleave ,defn))
+                   (list
+                    (interleave '() '())
+                    (interleave '(,g1) '(,g2))
+                    (interleave '(,g3 ,g4) '(,g5 ,g6))))
+                (list
+                 '()
+                 `(,g1 ,g2)
+                 `(,g3 ,g5 ,g4 ,g6))))))
+   '(((lambda (l1 l2)
+        (if (null? l2)
+            l1
+            (cons (car l1) (interleave l2 (cdr l1))))))))
 
 ;; foldr
 
@@ -137,9 +201,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -177,9 +241,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -217,9 +281,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -257,9 +321,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -297,9 +361,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -337,9 +401,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -377,9 +441,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -417,9 +481,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -457,9 +521,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -497,9 +561,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -537,9 +601,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -577,9 +641,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -617,9 +681,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -657,9 +721,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -697,9 +761,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -737,9 +801,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -777,9 +841,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -817,9 +881,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -857,9 +921,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -897,9 +961,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -935,9 +999,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -969,9 +1033,9 @@
         (evalo `(letrec ((foldr ,defn))
                   (list
                     (foldr ',g2 ',g1 '())
-                    (foldr cons ',g3 '(,g4))
-                    (foldr cons ',g4 '(,g5 ,g6))
-                    (foldr equal? ',g3 '(,g3))))
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
                (list
                 g1
                 `(,g4 . ,g3)
