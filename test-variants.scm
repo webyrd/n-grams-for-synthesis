@@ -36,9 +36,11 @@
                           
                           
                           #| Combined evaluators/inferencers for ML-like language: |#
+                          #|
                           "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml-interp-and-infer"
                           "variant-dynamic-ordering-ml-interp-and-infer"
                           "variant-expert-ordering-ml-interp-and-infer"
+                          |#
 
                           
                           #| Type inferencers for ML-like language: |#
@@ -65,15 +67,17 @@
 
                           
                           #| Interpreters for Schemely language: |#
+
+                          "variant-barliman-interpreter"
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations"
                           
                           #|
                           "variant-expert-ordering-with-application-and-lookup-optimizations"
                           "variant-expert-ordering-with-application-optimization"
-
-                          "variant-barliman-interpreter"
+                          
                           "variant-barliman-interpreter-incomplete"
                           
-                          "variant-dynamic-ordering-with-application-and-lookup-optimizations"
+                          
                           "variant-dynamic-ordering-with-application-and-lookup-optimizations-incomplete"
                           
                           "variant-dynamic-ordering-with-application-optimization"

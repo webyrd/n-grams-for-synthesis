@@ -6,6 +6,1076 @@
 (test-runner
  ;; timeout in seconds
  10
+
+ 
+;; append->fold-right
+
+(test "append->fold-right"
+  (run 1 (defn)
+    (fresh (body)
+      (absento 1 defn)
+      (absento 2 defn)
+      (absento 3 defn)
+      (absento 4 defn)
+      (absento 5 defn)
+      (absento 6 defn)
+      (== defn `(fold-right (lambda (f acc xs) ,body)))
+      (evalo
+       `(letrec (,defn)
+          (letrec ((append
+                    (lambda (xs ys)
+                      (fold-right cons ys xs))))
+            (list (append '() '())
+                  (append '(1) '(2))
+                  (append '(3 4) '(5 6)))))
+       `(() (1 2) (3 4 5 6)))))
+  '(((fold-right (lambda (f acc xs) (if (null? xs) acc (f (car xs) (fold-right f acc (cdr xs)))))))))
+
+
+;; rember tests
+
+(test "rember-1"
+  (run 1 (q)
+    (evalo
+      `(letrec ((rember (lambda (x l)
+                          (if (null? l)
+                              '()
+                              (if (equal? (car l) x)
+                                  (cdr l)
+                                  (cons (car l) (rember x (cdr l))))))))
+         (rember 'a '(a b c)))
+     q))
+  '(((b c))))
+
+
+(test "remove-shallow-1"
+  (run 1 (q)
+    (evalo
+     `(letrec ([remove
+                (lambda (x ls)
+                  (if (null? ls)
+                      '()
+                      (if (equal? (car ls) x)
+                          (remove x (cdr ls))
+                          (cons (car ls) (remove x (cdr ls))))))])
+        (list (remove 'foo '())
+              (remove 'foo '(foo))
+              (remove 'foo '(1))
+              (remove 'foo '(2 foo 3))
+              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
+              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
+     '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
+  '((_.0)))
+
+(test "remove-shallow-2"
+  (run 1 (A B C)
+    (evalo
+     `(letrec ([remove
+                (lambda (x ls)
+                  (if (null? ls)
+                      '()
+                      (if (equal? (car ls) x)
+                          (cons ,A ,B)
+                          ,C))) ])
+        (list (remove 'foo '())
+              (remove 'foo '(foo))
+              (remove 'foo '(1))
+              (remove 'foo '(2 foo 3))
+              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
+              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
+     '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
+  '())
+
+;; remove-deep
+
+(test "remove-deep-1"
+  (run 1 (q)
+    (evalo
+     `(letrec ([remove
+                (lambda (x ls)
+                  (cond
+                    [(null? ls) '()]
+                    [(equal? (car ls) x) (remove x (cdr ls))]
+                    [(pair? (car ls)) (cons (remove x (car ls)) (remove x (cdr ls)))]
+                    [else (cons (car ls) (remove x (cdr ls)))]))])
+        (list (remove 'foo '())
+              (remove 'foo '(foo))
+              (remove 'foo '(1))
+              (remove 'foo '(2 foo 3))
+              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
+              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
+     '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
+  '((_.0)))
+
+(test "remove-deep-2"
+  (run 1 (A B C D)
+    (fresh (all)
+      (== all `(,A ,B ,C ,D))
+      (absento 'bar all)
+      (absento 'baz all)
+      (absento 'quux all)
+      (absento 4 all)
+      (absento 5 all)
+      (absento 6 all)
+      (absento 7 all)
+      (absento 8 all)
+      (evalo
+       `(letrec ([remove
+                  (lambda (x ls)
+                    (cond
+                      [(null? ls) '()]
+                      [(pair? (car ls)) ,A]
+                      [(equal? (car ls) x) ,B]
+                      [else (cons (car ls) ,C)]
+                      [else (cons ,C ,D)]
+
+                      ))])
+          (list
+           (remove 'foo '())
+           (remove 'foo '(foo))
+           (remove 'foo '(1))
+           (remove 'foo '(2 foo 3))
+           (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
+           (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))
+
+           ))
+       '(() () (1)
+         (2 3)
+         (bar baz () ((quux)))
+         ((4) (5 (6)) 7 (8))
+
+         ))))
+  '((#t)))
+
+(test "remove-deep-3"
+  (run 1 (A B)
+    (evalo
+     `(letrec ([remove
+                (lambda (x ls)
+                  (cond
+                    [(null? ls) '()]
+                    [(equal? (car ls) x) ,A]
+                    [else (cons (car ls) ,B)]))])
+        (list (remove 'foo '())
+              (remove 'foo '(foo))
+              (remove 'foo '(1))
+              (remove 'foo '(2 foo 3))
+              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
+              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
+     '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
+  '())
+
+
+;; interleave
+
+ (test "interleave-0"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (evalo `(letrec ((interleave (lambda (l1 l2)
+                                       (if (null? l2)
+                                           l1
+                                           (cons (car l1) (interleave l2 (cdr l1)))))))
+                  (list
+                    (interleave '() '())
+                    (interleave '(,g1) '(,g2))
+                    (interleave '(,g3 ,g4) '(,g5 ,g6))))
+               (list
+                '()
+                `(,g1 ,g2)
+                `(,g3 ,g4 ,g5 ,g6))))))
+  '((lambda (l1 l2)
+      (if (null? l2)
+          l1
+          (cons (car l1) (interleave l2 (cdr l1)))))))
+
+;; foldr
+
+(test "foldr-0"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (== `(lambda (f acc xs)
+               (if (null? xs)
+                   acc
+                   (f (car xs) (foldr f acc (cdr xs)))))
+            defn)
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-1"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a)
+          (== `(lambda (f acc xs)
+                 (if (null? ,a)
+                     acc
+                     (f (car xs) (foldr f acc (cdr xs)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-2"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     acc
+                     (f (car xs) (foldr f acc (cdr xs)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-3"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     ,b
+                     (f (car xs) (foldr f acc (cdr xs)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-4"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     ,b
+                     (f (car ,c) (foldr f acc (cdr xs)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-5"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     ,b
+                     (f ,c (foldr f acc (cdr xs)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-6"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     ,b
+                     (f ,c (foldr f acc (cdr ,d)))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-7"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (foldr f acc ,a))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-8"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (foldr f ,a ,b))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-9"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (foldr ,a ,b ,c))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-10"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-11"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d e)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car ,e) (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-12"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d e f)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (,f ,e) (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-13"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d e f)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f ,e (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-14"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f ,a ,b)))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-15"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (,a ,b ,c)))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-16"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     ,a))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-17"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     ,a
+                     ,b))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-18"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if (null? ,a)
+                     ,b
+                     ,c))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-19"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c)
+          (== `(lambda (f acc xs)
+                 (if ,a
+                     ,b
+                     ,c))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-20"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a)
+          (== `(lambda (f acc xs)
+                 ,a)
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+(test "foldr-21"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr cons ',g3 '(,g4))
+                    (foldr cons ',g4 '(,g5 ,g6))
+                    (foldr equal? ',g3 '(,g3))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '((lambda (f acc xs)
+      (if (null? xs)
+          acc
+          (f (car xs) (foldr f acc (cdr xs)))))))
+
+
  
 ;; append tests
  
@@ -409,22 +1479,6 @@
         (sym _.0 _.1)))
       (((lambda (_.0 _.1) (if (null? _.0) _.1 (cons (car _.0) (append (cdr _.0) _.1)))) (=/= ((_.0 _.1)) ((_.0 a)) ((_.0 and)) ((_.0 append)) ((_.0 b)) ((_.0 c)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 d)) ((_.0 e)) ((_.0 equal?)) ((_.0 f)) ((_.0 if)) ((_.0 lambda)) ((_.0 letrec)) ((_.0 list)) ((_.0 match)) ((_.0 not)) ((_.0 null?)) ((_.0 or)) ((_.0 quote)) ((_.0 symbol?)) ((_.1 a)) ((_.1 and)) ((_.1 append)) ((_.1 b)) ((_.1 c)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 d)) ((_.1 e)) ((_.1 equal?)) ((_.1 f)) ((_.1 if)) ((_.1 lambda)) ((_.1 letrec)) ((_.1 list)) ((_.1 match)) ((_.1 not)) ((_.1 null?)) ((_.1 or)) ((_.1 quote)) ((_.1 symbol?))) (sym _.0 _.1)))))   
    )
-
-;; rember testx
-
-(test "rember-1"
-      (run 1 (q)
-	   (evalo
-	    `(letrec ((rember
-		       (lambda (a l)
-			 (cond
-			  ((null? l) (quote ()))
-			  ((eq? (car l) a) (cdr (l))
-			   (else (cons (car l)
-				       (rember a (cdr l)))))))))
-	       (rember 'a '(a b c)))
-	    q))
-      '((b c)))
 	    
  
 ;; reverse tests
@@ -1066,43 +2120,6 @@
          (sym _.0 _.1)))
        )))
 
-(test "remove-shallow-1"
-  (run 1 (q)
-    (evalo
-     `(letrec ([remove
-                (lambda (x ls)
-                  (if (null? ls)
-                      '()
-                      (if (equal? (car ls) x)
-                          (remove x (cdr ls))
-                          (cons (car ls) (remove x (cdr ls))))))])
-        (list (remove 'foo '())
-              (remove 'foo '(foo))
-              (remove 'foo '(1))
-              (remove 'foo '(2 foo 3))
-              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-     '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
-  '((_.0)))
-
-(test "remove-shallow-2"
-  (run 1 (A B C)
-    (evalo
-     `(letrec ([remove
-                (lambda (x ls)
-                  (if (null? ls)
-                      '()
-                      (if (equal? (car ls) x)
-                          (cons ,A ,B)
-                          ,C))) ])
-        (list (remove 'foo '())
-              (remove 'foo '(foo))
-              (remove 'foo '(1))
-              (remove 'foo '(2 foo 3))
-              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-     '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
-  '())
 
 (test "list-nth-element-peano"
   (run 1 (q r)
