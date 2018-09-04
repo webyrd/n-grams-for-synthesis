@@ -36,7 +36,10 @@
                   (append '(3 4) '(5 6)))))
        `(() (1 2) (3 4 5 6)))))
   '(((fold-right (lambda (f acc xs) (if (null? xs) acc (f (car xs) (fold-right f acc (cdr xs)))))))))
- 
+
+;;; TODO -- need more input/output examples to avoid underspecification:
+;; variant-dynamic-ordering-with-application-and-lookup-optimizations returns
+;;; (((fold-right (lambda (f acc xs) (if (null? xs) acc (cons (car xs) (fold-right xs acc (cdr xs))))))))
 (test "append->fold-right-full"
   (run 1 (defn)
     (fresh (body)
@@ -203,7 +206,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -243,7 +246,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -283,7 +286,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -323,7 +326,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -363,7 +366,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -403,7 +406,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -443,7 +446,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -483,7 +486,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -523,7 +526,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -563,11 +566,61 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
                 `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
+
+(test "foldr-10-extra-test"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7"))
+          (g8 (gensym "g8"))
+          (g9 (gensym "g9"))
+          (g10 (gensym "g10"))
+          (g11 (gensym "g11")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (absento g8 defn)
+        (absento g9 defn)
+        (absento g10 defn)
+        (absento g11 defn)
+        (fresh (a b c d)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (a d) (cons a d)) ',g7 '(,g8 ,g9 ,g10))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g11 '(,g11))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                `(,g8 ,g9 ,g10 . ,g7)
                 #t
                 )))))
   '(((lambda (f acc xs)
@@ -603,7 +656,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -615,6 +668,49 @@
            acc
            (f (car xs) (foldr f acc (cdr xs))))))))
 
+(test "foldr-10-match-not-allowed"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+
+        ;; disallow 'match in definition
+        (absento 'match defn)
+                
+        (fresh (a b c d)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 (test "foldr-11"
   (run 1 (defn)
     (let ((g1 (gensym "g1"))
@@ -643,7 +739,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -683,7 +779,52 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
+               (list
+                g1
+                `(,g4 . ,g3)
+                `(,g5 ,g6 . ,g4)
+                #t
+                )))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
+
+(test "foldr-13-ground"
+  (run 1 (defn)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7")))
+      (fresh (q)
+        (absento g1 defn)
+        (absento g2 defn)
+        (absento g3 defn)
+        (absento g4 defn)
+        (absento g5 defn)
+        (absento g6 defn)
+        (absento g7 defn)
+        (fresh (a b c d e f)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f (car xs) (foldr f acc (cdr xs)))))
+              defn)
+          (== `(lambda (f acc xs)
+                 (if (null? xs)
+                     acc
+                     (f ,e (,a ,b ,c ,d))))
+              defn))
+        (evalo `(letrec ((foldr ,defn))
+                  (list
+                    (foldr ',g2 ',g1 '())
+                    (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
+                    (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -723,7 +864,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -763,7 +904,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -803,7 +944,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -843,7 +984,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -883,7 +1024,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -923,7 +1064,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -935,7 +1076,7 @@
            acc
            (f (car xs) (foldr f acc (cdr xs))))))))
 
-(test "foldr-19"
+(test-p "foldr-19"
   (run 1 (defn)
     (let ((g1 (gensym "g1"))
           (g2 (gensym "g2"))
@@ -963,17 +1104,25 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '(((lambda (f acc xs)
-       (if (null? xs)
-           acc
-           (f (car xs) (foldr f acc (cdr xs))))))))
+  (one-of?
+   '((((lambda (f acc xs)
+         (if (null? xs)
+             acc
+             (f (car xs) (foldr f acc (cdr xs)))))))
+     ;;
+     (((lambda (f acc xs)
+         (if (quote #t)
+             (if (null? xs)
+                 acc
+                 (f (car xs) (foldr f acc (cdr xs))))
+             _.0)))))))
 
 (test "foldr-20"
   (run 1 (defn)
@@ -1001,7 +1150,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -1035,7 +1184,7 @@
                     (foldr ',g2 ',g1 '())
                     (foldr (lambda (a d) (cons a d)) ',g3 '(,g4))
                     (foldr (lambda (a d) (cons a d)) ',g4 '(,g5 ,g6))
-                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g3 '(,g3))))
+                    (foldr (lambda (v1 v2) (equal? v1 v2)) ',g7 '(,g7))))
                (list
                 g1
                 `(,g4 . ,g3)
@@ -1086,13 +1235,23 @@
       '(a b c d e)))
    (one-of?
      '((('(a b c))
-        ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0))))
+        ((car '((a b c) . _.0))
+         (absento (closure _.0) (prim _.0))))
        ;;
        (('(a b c))
-        (((lambda _.0 '(a b c))) (=/= ((_.0 quote))) (sym _.0)))
+        (((lambda _.0 '(a b c)))
+         (=/= ((_.0 quote)))
+         (sym _.0)))
        ;;
-       (((cdr '(_.0 a b c)) (absento (closure _.0) (prim _.0)))
-        ((car '((a b c) . _.0)) (absento (closure _.0) (prim _.0)))))))
+       (((cdr '(_.0 a b c))
+         (absento (closure _.0) (prim _.0)))
+        ((car '((a b c) . _.0))
+         (absento (closure _.0) (prim _.0))))
+       ;;
+       (((cdr '(_.0 a b c))
+         (absento (closure _.0) (prim _.0)))
+        ((cdr (cdr '(_.0 _.1 a b c)))
+         (absento (closure _.0) (closure _.1) (prim _.0) (prim _.1)))))))
 
  (test "append-3"
         (run* (q)
@@ -1616,7 +1775,8 @@
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
   (one-of? '((((append (cdr xs) (cons (car xs) '()))))
-             (((append (cdr xs) (list (car xs))))))))
+             (((append (cdr xs) (list (car xs)))))
+             (((append (cdr xs) (cons (car xs) (list))))))))
 
 (test-p "reverse-5"
   (run 1 (q r s)
@@ -1699,7 +1859,8 @@
                      (reverse '(,g4 ,g5 ,g6)))))
                (list '() `(,g1) `(,g3 ,g2) `(,g6 ,g5 ,g4))))))
   (one-of? '((((append (cdr xs) (cons (car xs) '()))))
-             (((append (cdr xs) (list (car xs))))))))
+             (((append (cdr xs) (list (car xs)))))
+             (((append (cdr xs) (cons (car xs) (list))))))))
 
 (test "reverse-20"
   (run 1 (q r s t)
