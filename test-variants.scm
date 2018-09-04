@@ -68,8 +68,8 @@
                           
                           #| Interpreters for Schemely language: |#
 
-                          "variant-barliman-interpreter"
                           "variant-dynamic-ordering-with-application-and-lookup-optimizations"
+                          "variant-barliman-interpreter"                          
                           
                           #|
                           "variant-expert-ordering-with-application-and-lookup-optimizations"
