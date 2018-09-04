@@ -5,9 +5,10 @@
 
 (test-runner
  ;; timeout in seconds
+
  10
 
- 
+
 ;; append->fold-right
 
 (test "append->fold-right"
@@ -32,23 +33,9 @@
   '(((fold-right (lambda (f acc xs) (if (null? xs) acc (f (car xs) (fold-right f acc (cdr xs)))))))))
 
 
-;; rember tests
+;; rember
 
 (test "rember-1"
-  (run 1 (q)
-    (evalo
-      `(letrec ((rember (lambda (x l)
-                          (if (null? l)
-                              '()
-                              (if (equal? (car l) x)
-                                  (cdr l)
-                                  (cons (car l) (rember x (cdr l))))))))
-         (rember 'a '(a b c)))
-     q))
-  '(((b c))))
-
-
-(test "remove-shallow-1"
   (run 1 (q)
     (evalo
      `(letrec ([remove
@@ -67,7 +54,7 @@
      '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
   '((_.0)))
 
-(test "remove-shallow-2"
+(test "rember-2"
   (run 1 (A B C)
     (evalo
      `(letrec ([remove
@@ -84,85 +71,6 @@
               (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
               (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
      '(() () (1) (2 3) (bar baz (foo) ((quux foo) foo)) ((4 foo) (5 (foo 6 foo)) 7 (8)))))
-  '())
-
-;; remove-deep
-
-(test "remove-deep-1"
-  (run 1 (q)
-    (evalo
-     `(letrec ([remove
-                (lambda (x ls)
-                  (cond
-                    [(null? ls) '()]
-                    [(equal? (car ls) x) (remove x (cdr ls))]
-                    [(pair? (car ls)) (cons (remove x (car ls)) (remove x (cdr ls)))]
-                    [else (cons (car ls) (remove x (cdr ls)))]))])
-        (list (remove 'foo '())
-              (remove 'foo '(foo))
-              (remove 'foo '(1))
-              (remove 'foo '(2 foo 3))
-              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-     '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
-  '((_.0)))
-
-(test "remove-deep-2"
-  (run 1 (A B C D)
-    (fresh (all)
-      (== all `(,A ,B ,C ,D))
-      (absento 'bar all)
-      (absento 'baz all)
-      (absento 'quux all)
-      (absento 4 all)
-      (absento 5 all)
-      (absento 6 all)
-      (absento 7 all)
-      (absento 8 all)
-      (evalo
-       `(letrec ([remove
-                  (lambda (x ls)
-                    (cond
-                      [(null? ls) '()]
-                      [(pair? (car ls)) ,A]
-                      [(equal? (car ls) x) ,B]
-                      [else (cons (car ls) ,C)]
-                      [else (cons ,C ,D)]
-
-                      ))])
-          (list
-           (remove 'foo '())
-           (remove 'foo '(foo))
-           (remove 'foo '(1))
-           (remove 'foo '(2 foo 3))
-           (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-           (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))
-
-           ))
-       '(() () (1)
-         (2 3)
-         (bar baz () ((quux)))
-         ((4) (5 (6)) 7 (8))
-
-         ))))
-  '((#t)))
-
-(test "remove-deep-3"
-  (run 1 (A B)
-    (evalo
-     `(letrec ([remove
-                (lambda (x ls)
-                  (cond
-                    [(null? ls) '()]
-                    [(equal? (car ls) x) ,A]
-                    [else (cons (car ls) ,B)]))])
-        (list (remove 'foo '())
-              (remove 'foo '(foo))
-              (remove 'foo '(1))
-              (remove 'foo '(2 foo 3))
-              (remove 'foo '(bar foo baz (foo) foo ((quux foo) foo)))
-              (remove 'foo '((4 foo) foo (5 (foo 6 foo)) foo 7 foo (8)))))
-     '(() () (1) (2 3) (bar baz () ((quux))) ((4) (5 (6)) 7 (8)))))
   '())
 
 
@@ -1075,7 +983,6 @@
           acc
           (f (car xs) (foldr f acc (cdr xs)))))))
 
-
  
 ;; append tests
  
@@ -1479,6 +1386,7 @@
         (sym _.0 _.1)))
       (((lambda (_.0 _.1) (if (null? _.0) _.1 (cons (car _.0) (append (cdr _.0) _.1)))) (=/= ((_.0 _.1)) ((_.0 a)) ((_.0 and)) ((_.0 append)) ((_.0 b)) ((_.0 c)) ((_.0 car)) ((_.0 cdr)) ((_.0 cons)) ((_.0 d)) ((_.0 e)) ((_.0 equal?)) ((_.0 f)) ((_.0 if)) ((_.0 lambda)) ((_.0 letrec)) ((_.0 list)) ((_.0 match)) ((_.0 not)) ((_.0 null?)) ((_.0 or)) ((_.0 quote)) ((_.0 symbol?)) ((_.1 a)) ((_.1 and)) ((_.1 append)) ((_.1 b)) ((_.1 c)) ((_.1 car)) ((_.1 cdr)) ((_.1 cons)) ((_.1 d)) ((_.1 e)) ((_.1 equal?)) ((_.1 f)) ((_.1 if)) ((_.1 lambda)) ((_.1 letrec)) ((_.1 list)) ((_.1 match)) ((_.1 not)) ((_.1 null?)) ((_.1 or)) ((_.1 quote)) ((_.1 symbol?))) (sym _.0 _.1)))))   
    )
+
 	    
  
 ;; reverse tests
