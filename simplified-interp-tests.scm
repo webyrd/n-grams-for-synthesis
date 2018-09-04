@@ -5,7 +5,7 @@
 
 (test-runner
  ;; timeout in seconds
- 10
+ 1
  
 ;; append tests
  
@@ -417,14 +417,13 @@
 	   (evalo
 	    `(letrec ((rember
 		       (lambda (a l)
-			 (cond
-			  ((null? l) (quote ()))
-			  ((eq? (car l) a) (cdr (l))
-			   (else (cons (car l)
-				       (rember a (cdr l)))))))))
+			 (if (null? l) '()
+			  (if (equal? (car l) a) (cdr l)
+			   (cons (car l)
+				 (rember a (cdr l))))))))
 	       (rember 'a '(a b c)))
 	    q))
-      '((b c)))
+      '(((b c))))
 	    
  
 ;; reverse tests
