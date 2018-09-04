@@ -146,10 +146,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-1"
   (run 1 (defn)
@@ -186,10 +186,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-2"
   (run 1 (defn)
@@ -226,10 +226,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-3"
   (run 1 (defn)
@@ -266,10 +266,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-4"
   (run 1 (defn)
@@ -306,10 +306,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-5"
   (run 1 (defn)
@@ -346,10 +346,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-6"
   (run 1 (defn)
@@ -386,10 +386,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-7"
   (run 1 (defn)
@@ -426,10 +426,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-8"
   (run 1 (defn)
@@ -466,10 +466,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-9"
   (run 1 (defn)
@@ -506,10 +506,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-10"
   (run 1 (defn)
@@ -546,10 +546,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-11"
   (run 1 (defn)
@@ -586,10 +586,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-12"
   (run 1 (defn)
@@ -626,10 +626,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-13"
   (run 1 (defn)
@@ -666,10 +666,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-14"
   (run 1 (defn)
@@ -706,10 +706,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-15"
   (run 1 (defn)
@@ -746,10 +746,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-16"
   (run 1 (defn)
@@ -786,10 +786,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-17"
   (run 1 (defn)
@@ -826,10 +826,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-18"
   (run 1 (defn)
@@ -866,10 +866,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-19"
   (run 1 (defn)
@@ -906,10 +906,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-20"
   (run 1 (defn)
@@ -944,10 +944,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
 (test "foldr-21"
   (run 1 (defn)
@@ -978,10 +978,10 @@
                 `(,g5 ,g6 . ,g4)
                 #t
                 )))))
-  '((lambda (f acc xs)
-      (if (null? xs)
-          acc
-          (f (car xs) (foldr f acc (cdr xs)))))))
+  '(((lambda (f acc xs)
+       (if (null? xs)
+           acc
+           (f (car xs) (foldr f acc (cdr xs))))))))
 
  
 ;; append tests
