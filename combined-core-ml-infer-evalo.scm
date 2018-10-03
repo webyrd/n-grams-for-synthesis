@@ -50,8 +50,8 @@
     (== `(cons ,e1 ,e2) expr)
     (== `(list ,alpha) type)
     (== `(cons ,v1 ,v2) val)
-    (!-/eval-expo e1 gamma env `(list ,alpha) v1 'cons-e1)
-    (!-/eval-expo e2 gamma env alpha v2 'cons-e2)))
+    (!-/eval-expo e2 gamma env `(list ,alpha) v2 'cons-e2)
+    (!-/eval-expo e1 gamma env alpha v1 'cons-e1)))
 
 (define (pair-!-/evalo expr gamma env type val)
   (fresh (e1 e2 t1 t2 v1 v2)
