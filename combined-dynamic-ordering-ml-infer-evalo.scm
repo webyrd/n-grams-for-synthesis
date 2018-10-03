@@ -1,4 +1,4 @@
-(define *output-table-file-name* "tmp/variant-dynamic-ordering-ml-infer-evalo-table.scm")
+(define *output-table-file-name* "tmp/combined-dynamic-ordering-ml-infer-evalo-table.scm")
 
 (define allow-incomplete-search? #f)
 
