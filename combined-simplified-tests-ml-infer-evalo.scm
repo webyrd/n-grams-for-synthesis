@@ -43,6 +43,31 @@
       (== '(null? (cons 3 nil)) expr)
       (!-/evalo expr type val))
     '((((null? (cons 3 nil)) bool #f))))
+
+  (test "simple-car-1"
+    (run 1 (expr type val)
+      (== '(car (cons 3 (cons 4 nil))) expr)
+      (!-/evalo expr type val))
+    '((((car (cons 3 (cons 4 nil))) int 3))))
+
+  (test "simple-cdr-1"
+    (run 1 (expr type val)
+      (== '(cdr (cons 3 (cons 4 nil))) expr)
+      (!-/evalo expr type val))
+    '((((cdr (cons 3 (cons 4 nil))) (list int) (cons 4 nil)))))
+
+  (test "simple-pair-1"
+    (run 1 (expr type val)
+      (== '(pair 3 #t) expr)
+      (!-/evalo expr type val))
+    '((((pair 3 #t) (pair int bool) (pair 3 #t)))))
+
+  (test "simple-if-1"
+    (run 1 (expr type val)
+      (== '(if (null? (cons 3 nil)) (pair 5 #t) (pair 6 #f)) expr)
+      (!-/evalo expr type val))
+    '((((if (null? (cons 3 nil)) (pair 5 #t) (pair 6 #f)) (pair int bool) (pair 6 #f)))))
+
   
   (test "simple-lambda-1"
     (run 1 (expr type val)
