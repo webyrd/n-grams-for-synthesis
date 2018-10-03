@@ -22,7 +22,6 @@
   (fresh ()
     (symbolo expr)
     (=/= 'nil expr)
-    ;; TODO check order of arguments to lookup
     (lookup-!-/evalo expr gamma env type val)))
 
 (define (null?-!-/evalo expr gamma env type val)
@@ -275,7 +274,108 @@
 (define empty-env '())
 
 (define (!-/evalo expr type val)
-  (!-/eval-expo expr empty-gamma empty-env type val 'top-level))
+  (fresh ()
+    (!-/eval-expo expr empty-gamma empty-env type val 'top-level)
+    ;; TODO
+    ;; (!-o expr empty-gamma type)
+    ))
+
+
+;; TODO -- update!
+(define lookup-!-o
+  (lambda (gamma x type)
+    (fresh (y t rest z e gamma^)
+      (symbolo x)
+      (== `((,y ,t) . ,rest) gamma)
+      (symbolo y)
+      (conde
+        [(== x y)
+         (conde
+           [(== t `(mono ,type))]
+           [(== t `(poly ,gamma^ (lambda (,z) ,e)))
+            (symbolo z)
+            (!-o gamma^ `(lambda (,z) ,e) type)])]
+        [(=/= x y)
+         (lookup-!-o rest x type)]))))
+
+(define !-o
+  (lambda (gamma expr type)
+    (conde
+      [(== #f expr) (== 'bool type)]
+      [(== #t expr) (== 'bool type)]
+      [(numbero expr) (== 'int type)]
+      [(== 'nil expr)
+       (fresh (a)
+         (== `(list ,a) type))]
+      [(symbolo expr)
+       (=/= expr 'nil)
+       (lookup-!-o gamma expr type)]
+      [(fresh (e a)
+         (== `(null? ,e) expr)
+         (== 'bool type)
+         (!-o gamma e `(list ,a)))]      
+      [(fresh (e a)
+         (== `(car ,e) expr)
+         (== a type)
+         (!-o gamma e `(list ,a)))]
+      [(fresh (e a)
+         (== `(cdr ,e) expr)
+         (== `(list ,a) type)
+         (!-o gamma e `(list ,a)))]
+      [(fresh (e)
+         (== `(zero? ,e) expr)
+         (== 'bool type)
+         (!-o gamma e 'int))]
+      [(fresh (e1 e2 a)
+         (== `(cons ,e1 ,e2) expr)
+         (== `(list ,a) type)
+         (!-o gamma e2 `(list ,a))
+         (!-o gamma e1 a))]
+      [(fresh (e1 e2 t1 t2)
+         (== `(pair ,e1 ,e2) expr)
+         (== `(pair ,t1 ,t2) type)
+         (!-o gamma e1 t1)
+         (!-o gamma e2 t2))]
+      [(fresh (e1 e2 e3)
+         (== `(if ,e1 ,e2 ,e3) expr)
+         (!-o gamma e1 'bool)
+         (!-o gamma e2 type)
+         (!-o gamma e3 type))]
+      [(fresh (f z e body t)
+         (== `(let-poly ((,f (lambda (,z) ,e)))
+                ,body)
+             expr)
+         (symbolo f)
+         (symbolo z)
+
+         ;; Make sure the right-hand-side of 'f' has a type, but then forget about the type.
+         (fresh (forget-me)
+           (!-o `((,f (mono ,forget-me)) . ,gamma) `(lambda (,z) ,e) forget-me))
+         
+         ;; Add the right-hand-side of the binding (an expression) to the environment for use later.
+         (!-o `((,f (poly ((,f (mono ,t)) . ,gamma)
+                          (lambda (,z) ,e)))
+                . ,gamma)
+              body
+              type))]
+      [(fresh (x body t t^)
+         (== `(lambda (,x) ,body) expr)
+         (symbolo x)
+         (== `(-> ,t ,t^) type)
+         (!-o `((,x (mono ,t)) . ,gamma) body t^))]
+      [(fresh (e1 e2 t)
+         (== `(,e1 ,e2) expr)
+         (!-o gamma e1 `(-> ,t ,type))
+         (!-o gamma e2 t))]
+      [(fresh (e1 e2 e3 t1 t2)
+         (== `(,e1 ,e2 ,e3) expr)
+         (!-o gamma e1 `(-> ,t1 (-> ,t2 ,type)))
+         (!-o gamma e2 t1)
+         (!-o gamma e3 t2))]
+      )))
+
+
+
 
 
 (define (alist-ref alist element failure-result)
