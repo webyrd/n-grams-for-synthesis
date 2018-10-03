@@ -2,64 +2,73 @@
 
 (define (bool-!-/evalo expr gamma env type val)
   (conde
-    ((== #t expr) (== #t val))
-    ((== #f expr) (== #f val))))
+    ((== #t expr) (== 'bool type) (== #t val))
+    ((== #f expr) (== 'bool type) (== #f val))))
 
 (define (num-!-/evalo expr gamma env type val)
   (fresh ()
     (numbero expr)
+    (== 'int type)
     (== expr val)))
 
 (define (nil-!-/evalo expr gamma env type val)
   (fresh ()
     (== 'nil expr)
-    (== 'nil val)))
+    (== 'nil val)
+    (fresh (alpha)
+      (== `(list ,alpha) type))))
 
 (define (var-!-/evalo expr gamma env type val)
   (fresh ()
     (symbolo expr)
     (=/= 'nil expr)
+    ;; TODO check order of arguments to lookup
     (lookup-!-/evalo expr gamma env type val)))
 
 (define (null?-!-/evalo expr gamma env type val)
-  (fresh (e v)
+  (fresh (e alpha v)
     (== `(null? ,e) expr)
+    (== 'bool type)
     (conde
       ((== 'nil v) (== #t val))
       ((=/= 'nil v) (== #f val)))
-    (eval-expo e env v 'null?)))
+    (!-/eval-expo e gamma env `(list ,alpha) v 'null?)))
 
 (define (car-!-/evalo expr gamma env type val)
-  (fresh (e d)
+  (fresh (e alpha d)
     (== `(car ,e) expr)
-    (eval-expo e env `(cons ,val ,d) 'car)))
+    (== alpha type)
+    (!-/eval-expo e gamma env `(list ,alpha) `(cons ,val ,d) 'car)))
 
 (define (cdr-!-/evalo expr gamma env type val)
-  (fresh (e a)
+  (fresh (e alpha a)
     (== `(cdr ,e) expr)
-    (eval-expo e env `(cons ,a ,val) 'cdr)))
+    (== `(list ,alpha) type)
+    (!-/eval-expo e gamma env `(list ,alpha) `(cons ,a ,val) 'cdr)))
 
 (define (cons-!-/evalo expr gamma env type val)
-  (fresh (e1 e2 v1 v2)
+  (fresh (e1 e2 alpha v1 v2)
     (== `(cons ,e1 ,e2) expr)
+    (== `(list ,alpha) type)
     (== `(cons ,v1 ,v2) val)
-    (eval-expo e1 env v1 'cons-e1)
-    (eval-expo e2 env v2 'cons-e2)))
+    (!-/eval-expo e1 gamma env `(list ,alpha) v1 'cons-e1)
+    (!-/eval-expo e2 gamma env alpha v2 'cons-e2)))
 
 (define (pair-!-/evalo expr gamma env type val)
-  (fresh (e1 e2 v1 v2)
+  (fresh (e1 e2 t1 t2 v1 v2)
     (== `(pair ,e1 ,e2) expr)
+    (== `(pair ,t1 ,t2) type)
     (== `(pair ,v1 ,v2) val)
-    (eval-expo e1 env v1 'pair-e1)
-    (eval-expo e2 env v2 'pair-e2)))
+    (!-/eval-expo e1 gamma env t1 v1 'pair-e1)
+    (!-/eval-expo e2 gamma env t2 v2 'pair-e2)))
 
 (define (if-!-/evalo expr gamma env type val)
   (fresh (e1 e2 e3 t)
     (== `(if ,e1 ,e2 ,e3) expr)
-    (eval-expo e1 env t 'if-test)
+    (!-/eval-expo e1 gamma env 'bool t 'if-test)
     (conde
-      ((== #t t) (eval-expo e2 env type val 'if-conseq))
-      ((== #f t) (eval-expo e3 env type val 'if-alt)))))
+      ((== #t t) (!-/eval-expo e2 gamma env type val 'if-conseq))
+      ((== #f t) (!-/eval-expo e3 gamma env type val 'if-alt)))))
 
 (define (letrec-!-/evalo expr gamma env type val)
   (fresh (p-name x body letrec-body)
@@ -69,25 +78,30 @@
         expr)
     (symbolo p-name)
     (list-of-symbolso x)
-    (eval-expo letrec-body
-               `((,p-name . (rec . (lambda ,x ,body))) . ,env)
-               val
-               'letrec-body)))
+    (!-/eval-expo letrec-body
+                  `((,p-name . (poly ((,p-name . (mono . ,t)) . ,gamma)
+                                     (lambda ,x ,body)))
+                    . ,gamma)
+                  `((,p-name . (rec . (lambda ,x ,body))) . ,env)
+                  type
+                  val
+                  'letrec-body)))
 
 (define (lambda-!-/evalo expr gamma env type val)
-  (fresh (x body)
+  (fresh (x body t t^)
     (== `(lambda ,x ,body) expr)
+    (== `(-> ,t ,t^) type)
     (== `(closure (lambda ,x ,body) ,env) val)
     (list-of-symbolso x)))
 
 (define (app-!-/evalo expr gamma env type val)
-  (fresh (rator x* rands body env^ a* res)
+  (fresh (rator x* rands body env^ a* res t t*)
     (== `(,rator . ,rands) expr)
     ;; Multi-argument
-    (eval-expo rator env `(closure (lambda ,x* ,body) ,env^) 'app-rator)
-    (eval-randso rands env a*)
-    (ext-env*o x* a* env^ res)
-    (eval-expo body res val 'lambda)))
+    (!-/eval-expo rator gamma env `(-> ,t ,type) `(closure (lambda ,x* ,body) ,gamma^ ,env^) 'app-rator)
+    (!-/eval-randso rands gamma env t* a*)
+    (ext-gamma*/env*o x* t* a* gamma^ gamma^^ env^ env^^)
+    (!-/eval-expo body gamma^^ env^^ type val 'lambda)))
 
 
 
@@ -96,37 +110,42 @@
 
 
 (define (equal?-!-/evalo expr gamma env type val)
-  (fresh (e1 e2 v1 v2)
+  (fresh (e1 e2 t v1 v2)
     (== `(equal? ,e1 ,e2) expr)
+    (== 'bool type)
     (conde
       ((== v1 v2) (== #t val))
       ((=/= v1 v2) (== #f val)))
-    (eval-expo e1 env v1 'equal?-e1)
-    (eval-expo e2 env v2 'equal?-e2)))
+    (!-/eval-expo e1 gamma env t v1 'equal?-e1)
+    (!-/eval-expo e2 gamma env t v2 'equal?-e2)))
 
 (define (and-!-/evalo expr gamma env type val)
   (fresh (e*)
     (== `(and . ,e*) expr)
-    (ando e* env type val)))
+    (== 'bool type)
+    (ando e* gamma env type val)))
 
 (define (or-!-/evalo expr gamma env type val)
   (fresh (e*)
     (== `(or . ,e*) expr)
-    (oro e* env type val)))
+    (== 'bool type)
+    (oro e* gamma env type val)))
 
 (define (list-!-/evalo expr gamma env type val)
-  (fresh (rands a*)
+  (fresh (rands alpha a*)
     (== `(list . ,rands) expr)
+    (== `(list ,alpha) type)
     (== a* val)
-    (eval-listo rands env a*)))
+    (eval-listo rands gamma env alpha a*)))
 
 (define (symbol?-!-/evalo expr gamma env type val)
-  (fresh (e v)
+  (fresh (e t v)
     (== `(symbol? ,e) expr)
+    (== 'bool type)
     (conde
       ((symbolo v) (== #t val))
       ((not-symbolo v) (== #f val)))
-    (eval-expo e env v 'symbol?)))
+    (!-/eval-expo e gamma env t v 'symbol?)))
 
 (define (not-symbolo t)
   (conde
@@ -140,49 +159,56 @@
 (define (not-!-/evalo expr gamma env type val)
   (fresh (e v)
     (== `(not ,e) expr)
+    (== 'bool type)
     (conde
       ((== #t v) (== #f val))
       ((== #f v) (== #t val)))
-    (eval-expo e env v 'not)))
+    (!-/eval-expo e gamma env 'bool v 'not)))
 
 
 
 
 
-(define (lookup-!-/evalo x env t)
-  (fresh (y b rest)
+(define (lookup-!-/evalo x gamma env type val)
+  (fresh (y t v rest-gamma rest-env)
     (symbolo x)
-    (== `((,y . ,b) . ,rest) env)
+    (== `((,y . ,t) . ,rest-gamma) gamma)
+    (== `((,y . ,v) . ,rest-env) env)
     (symbolo y)
     (conde
       ((== x y)
        (conde
-         ((== `(val . ,t) b))
+         ((== `(val . ,val) v)
+          (== `(mono . ,type) t))
          ((fresh (lam-expr)
-            (== `(rec . ,lam-expr) b)
-            (== `(closure ,lam-expr ,env) t)))))
+            (== `(rec . ,lam-expr) v)
+            (fresh (gamma^)
+              (== `(poly ,gamma^ ,lam-expr) t))
+            (== `(closure ,lam-expr ,gamma ,env) val)))))
       ((=/= x y)
-       (lookup-!-/evalo x rest t)))))
+       (lookup-!-/evalo x rest-gamma rest-env type val)))))
 
-(define (eval-randso expr gamma env type val)
+(define (!-/eval-randso expr* gamma env type* val*)
   (conde
-    ((== '() expr)
-     (== '() val))
-    ((fresh (a d v-a v-d)
-       (== `(,a . ,d) expr)
-       (== `(,v-a . ,v-d) val)
-       (eval-expo a env v-a 'app-rand*)
-       (eval-randso d env v-d)))))
+    ((== '() expr*)
+     (== '() type*)
+     (== '() val*))
+    ((fresh (a d t-a t-d v-a v-d)
+       (== `(,a . ,d) expr*)
+       (== `(,t-a . ,t-d) type*)
+       (== `(,v-a . ,v-d) val*)
+       (!-/eval-expo a gamma env t-a v-a 'app-rand*)
+       (!-/eval-randso d gamma env t-d v-d)))))
 
-(define (eval-listo expr gamma env type val)
+(define (eval-listo expr* gamma env type val*)
   (conde
-    ((== '() expr)
-     (== '() val))
+    ((== '() expr*)
+     (== '() val*))
     ((fresh (a d v-a v-d)
-       (== `(,a . ,d) expr)
-       (== `(,v-a . ,v-d) val)
-       (eval-expo a env v-a 'list)
-       (eval-listo d env v-d)))))
+       (== `(,a . ,d) expr*)
+       (== `(,v-a . ,v-d) val*)
+       (!-/eval-expo a  gamma env type v-a 'list)
+       (eval-listo d gamma env type v-d)))))
 
 ;; need to make sure lambdas are well formed.
 ;; grammar constraints would be useful here!!!
@@ -194,17 +220,19 @@
        (symbolo a)
        (list-of-symbolso d)))))
 
-(define (ext-env*o x* a* env out)
+(define (ext-gamma*/env*o x* t* a* gamma gamma^ env env^)
   (conde
-    ((== '() x*) (== '() a*) (== env out))
-    ((fresh (x a dx* da* env2)
+    ((== '() x*) (== '() t*) (== '() a*) (== gamma gamma^) (== env env^))
+    ((fresh (x t a dx* dt* da* gamma2 env2)
        (== `(,x . ,dx*) x*)
+       (== `(,t . ,dt*) t*)
        (== `(,a . ,da*) a*)
+       (== `((,x . (mono . ,t)) . ,gamma) gamma2)
        (== `((,x . (val . ,a)) . ,env) env2)
        (symbolo x)
-       (ext-env*o dx* da* env2 out)))))
+       (ext-gamma*/env*o dx* dt* da* gamma2 gamma^ env2 env^)))))
 
-(define (ando e* env type val)
+(define (ando e* gamma env val)
   (conde
     ((== '() e*) (== #t val))
     ((fresh (e)
@@ -212,18 +240,18 @@
        (conde
          ((== #f val))
          ((== #t val)))
-       (eval-expo e env type val 'and)))
+       (!-/eval-expo e gamma env 'bool val 'and)))
     ((fresh (e1 e2 e-rest v)
        (== `(,e1 ,e2 . ,e-rest) e*)
        (conde
          ((== #f v)
           (== #f val)
-          (eval-expo e1 env v 'and))
+          (!-/eval-expo e1 gamma env v 'bool 'and))
          ((== #t v)
-          (eval-expo e1 env v 'and)
-          (ando `(,e2 . ,e-rest) env type val)))))))
+          (!-/eval-expo e1 gamma env v 'bool 'and)
+          (ando `(,e2 . ,e-rest) gamma env val)))))))
 
-(define (oro e* env type val)
+(define (oro e* gamma env val)
   (conde
     ((== '() e*) (== #f val))
     ((fresh (e)
@@ -231,16 +259,16 @@
        (conde
          ((== #f val))
          ((== #t val)))
-       (eval-expo e env type val 'or)))
+       (!-/eval-expo e gamma env 'bool val 'or)))
     ((fresh (e1 e2 e-rest v)
        (== `(,e1 ,e2 . ,e-rest) e*)
        (conde
          ((== #t v)
           (== v val)
-          (eval-expo e1 env v 'or))
+          (!-/eval-expo e1 gamma env 'bool v 'or))
          ((== #f v)
-          (eval-expo e1 env v 'or)
-          (oro `(,e2 . ,e-rest) env type val)))))))
+          (!-/eval-expo e1 gamma env 'bool v 'or)
+          (oro `(,e2 . ,e-rest) gamma env val)))))))
 
 
 
@@ -265,21 +293,29 @@
 ;;;
 ;;; (Is there a better way to write this???)
 (define (lookup-!-/evalo-k k)
-  (lambda (x env t)
+  (lambda (x gamma env type val)
     (conde
-      ((== '() env) k)
-      ((fresh (y b rest)
-         (== `((,y . ,b) . ,rest) env)
+      ((== '() gamma)
+       (== '() env)
+       ;; run k
+       k)
+      ((fresh (y t v rest-gamma rest-env)
+         (symbolo x)
+         (== `((,y . ,t) . ,rest-gamma) gamma)
+         (== `((,y . ,v) . ,rest-env) env)
          (symbolo y)
          (conde
-           ((== x y)           
+           ((== x y)
             (conde
-              ((== `(val . ,t) b))
+              ((== `(val . ,val) v)
+               (== `(mono . ,type) t))
               ((fresh (lam-expr)
-                 (== `(rec . ,lam-expr) b)
-                 (== `(closure ,lam-expr ,env) t)))))
+                 (== `(rec . ,lam-expr) v)
+                 (fresh (gamma^)
+                   (== `(poly ,gamma^ ,lam-expr) t))
+                 (== `(closure ,lam-expr ,gamma ,env) val)))))
            ((=/= x y)
-            ((lookup-!-/evalo-k k) x rest t))))))))
+            ((lookup-!-/evalo-k k) x rest-gamma rest-env type val))))))))
 
 (define build-and-run-conde
   (lambda (expr gamma env type val list-of-eval-relations)
