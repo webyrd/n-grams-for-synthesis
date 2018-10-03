@@ -32,7 +32,7 @@
                       (lambda (a b)
                         (> (alist-ref ctx-stats (car a) 0)
                            (alist-ref ctx-stats (car b) 0)))))
-                (map cdr (list-sort compare expert-ordering-alist-ml)))))))
+                (map cdr (list-sort compare expert-ordering-alist-ml-!-/evalo)))))))
     (map (lambda (ctx)
            (cons ctx (ordering-for-context ctx)))
          all-contexts)))
@@ -47,10 +47,10 @@
 
         ; symbol? doesn't appear in the data, so we'll return the expert ordering
         ; for such cases.
-        expert-ordering-ml))))
+        expert-ordering-ml-!-/evalo))))
 
-(define (eval-expo expr env val context)
-  (build-and-run-conde expr env val
+(define (!-/eval-expo expr gamma env type val context)
+  (build-and-run-conde expr gamma env type val
                        (order-eval-relations context)
                        ;expert-ordering
                        ))
