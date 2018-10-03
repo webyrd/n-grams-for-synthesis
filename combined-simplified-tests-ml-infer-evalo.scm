@@ -221,7 +221,99 @@
     '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
         (list (list int))
         (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
-  
+
+  (test "append-eval-only-18"
+     (run 1 (expr type val)
+       (fresh (q r s t prog)
+         (absento 1 prog)
+         (absento 2 prog)
+         (absento 3 prog)
+         (absento 4 prog)
+         (absento 5 prog)
+         (absento 6 prog)
+         (== `(lambda (l s)
+                (if ,q
+                    ,r
+                    ,s))
+             prog)
+         (== `(letrec ((append ,prog))
+                (list
+                 (append nil nil)
+                 (append (cons 1 nil) (cons 2 nil))
+                 (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             expr)
+         (== '(nil
+               (cons 1 (cons 2 nil))
+               (cons 3 (cons 4 (cons 5 (cons 6 nil)))))
+             val)
+         (!-/evalo expr type val)))
+     '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+
+  (test "append-eval-only-18-extra-example"
+     (run 1 (expr type val)
+       (fresh (q r s t prog)
+         (absento 1 prog)
+         (absento 2 prog)
+         (absento 3 prog)
+         (absento 4 prog)
+         (absento 5 prog)
+         (absento 6 prog)
+         (absento 7 prog)
+         (absento 8 prog)
+         (absento 9 prog)
+         (absento 10 prog)
+         (absento 11 prog)
+         (absento 12 prog)
+         (== `(lambda (l s)
+                (if ,q
+                    ,r
+                    ,s))
+             prog)
+         (== `(letrec ((append ,prog))
+                (list
+                 (append nil nil)
+                 (append (cons 1 nil) (cons 2 nil))
+                 (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))
+                 (append (cons 7 (cons 8 (cons 9 nil))) (cons 10 (cons 11 (cons 12 nil))))))
+             expr)
+         (== '(nil
+               (cons 1 (cons 2 nil))
+               (cons 3 (cons 4 (cons 5 (cons 6 nil))))
+               (cons 7 (cons 8 (cons 9 (cons 10 (cons 11 (cons 12 nil)))))))
+             val)
+         (!-/evalo expr type val)))
+     '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+
+   (test "append-eval-only-19"
+     (run 1 (expr type val)
+       (fresh (q r s t prog)
+         (absento 1 prog)
+         (absento 2 prog)
+         (absento 3 prog)
+         (absento 4 prog)
+         (absento 5 prog)
+         (absento 6 prog)
+         (== `(lambda (l s)
+                ,q)
+             prog)
+         (== `(letrec ((append ,prog))
+                (list
+                 (append nil nil)
+                 (append (cons 1 nil) (cons 2 nil))
+                 (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+             expr)
+         (== '(nil
+               (cons 1 (cons 2 nil))
+               (cons 3 (cons 4 (cons 5 (cons 6 nil)))))
+             val)
+         (!-/evalo expr type val)))
+     '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
   
  )
 
