@@ -95,7 +95,7 @@
     (list-of-symbolso x)))
 
 (define (app-!-/evalo expr gamma env type val)
-  (fresh (rator x* rands body env^ a* res t t*)
+  (fresh (rator x* rands body gamma^ gamma^^ env^ env^^ a* res t t*)
     (== `(,rator . ,rands) expr)
     ;; Multi-argument
     (!-/eval-expo rator gamma env `(-> ,t ,type) `(closure (lambda ,x* ,body) ,gamma^ ,env^) 'app-rator)
