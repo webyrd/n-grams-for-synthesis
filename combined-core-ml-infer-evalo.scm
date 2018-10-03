@@ -70,7 +70,7 @@
       ((== #f t) (!-/eval-expo e3 gamma env type val 'if-alt)))))
 
 (define (letrec-!-/evalo expr gamma env type val)
-  (fresh (p-name x body letrec-body)
+  (fresh (p-name x body letrec-body t)
     ;; single-function muti-argument letrec version
     (== `(letrec ((,p-name (lambda ,x ,body)))
            ,letrec-body)
@@ -90,7 +90,7 @@
   (fresh (x body t t^)
     (== `(lambda ,x ,body) expr)
     (== `(-> ,t ,t^) type)
-    (== `(closure (lambda ,x ,body) ,env) val)
+    (== `(closure (lambda ,x ,body) ,gamma ,env) val)
     (list-of-symbolso x)))
 
 (define (app-!-/evalo expr gamma env type val)
@@ -122,13 +122,13 @@
   (fresh (e*)
     (== `(and . ,e*) expr)
     (== 'bool type)
-    (ando e* gamma env type val)))
+    (ando e* gamma env val)))
 
 (define (or-!-/evalo expr gamma env type val)
   (fresh (e*)
     (== `(or . ,e*) expr)
     (== 'bool type)
-    (oro e* gamma env type val)))
+    (oro e* gamma env val)))
 
 (define (list-!-/evalo expr gamma env type val)
   (fresh (rands alpha a*)
