@@ -137,6 +137,91 @@
          (cons 1 (cons 2 nil))
          (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
 
+  (test "append-eval-only-15"
+    (run 1 (expr type val)
+      (fresh (q r s t prog)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) (append ,t s))))
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (== '(nil
+              (cons 1 (cons 2 nil))
+              (cons 3 (cons 4 (cons 5 (cons 6 nil)))))
+            val)
+        (!-/evalo expr type val)))
+    '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+
+  (test "append-eval-only-16"
+    (run 1 (expr type val)
+      (fresh (q r s t u prog)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) (append ,t ,u))))
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (== '(nil
+              (cons 1 (cons 2 nil))
+              (cons 3 (cons 4 (cons 5 (cons 6 nil)))))
+            val)
+        (!-/evalo expr type val)))
+    '???)
+
+  (test "append-eval-only-17"
+    (run 1 (expr type val)
+      (fresh (q r s t prog)
+        (absento 1 prog)
+        (absento 2 prog)
+        (absento 3 prog)
+        (absento 4 prog)
+        (absento 5 prog)
+        (absento 6 prog)
+        (== `(lambda (l s)
+               (if ,q
+                   ,r
+                   (,s (car l) ,t)))
+            prog)
+        (== `(letrec ((append ,prog))
+               (list
+                (append nil nil)
+                (append (cons 1 nil) (cons 2 nil))
+                (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+            expr)
+        (== '(nil
+              (cons 1 (cons 2 nil))
+              (cons 3 (cons 4 (cons 5 (cons 6 nil)))))
+            val)
+        (!-/evalo expr type val)))
+    '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+  
   
  )
 
