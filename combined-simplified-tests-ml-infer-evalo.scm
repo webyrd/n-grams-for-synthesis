@@ -97,6 +97,46 @@
       (== '((lambda (x) (pair x x)) (cons 3 nil)) expr)
       (!-/evalo expr type val))
     '(((((lambda (x) (pair x x)) (cons 3 nil)) (pair (list int) (list int)) (pair (cons 3 nil) (cons 3 nil))))))
+
+  (test "simple-app-4"
+    (run* (expr type val)
+      (== '((lambda (x y z) (pair (car x) (pair (car y) (car z)))) (cons 3 nil) (cons 4 nil) (cons 5 nil)) expr)
+      (!-/evalo expr type val))
+    '(((((lambda (x y z)
+           (pair (car x) (pair (car y) (car z))))
+         (cons 3 nil)
+         (cons 4 nil)
+         (cons 5 nil))
+        (pair int (pair int int))
+        (pair 3 (pair 4 5))))))
+
+  (test "simple-letrec-1"
+    (run* (expr type val)
+      (== '(letrec ((f (lambda (x) x)))
+             (f (cons 3 nil)))
+          expr)
+      (!-/evalo expr type val))
+    '((((letrec ((f (lambda (x) x))) (f (cons 3 nil))) (list int) (cons 3 nil)))))
+
+  (test "simple-letrec-2"
+    (run* (expr type val)
+      (== '(letrec ((append (lambda (l s)
+                              (if (null? l)
+                                  s
+                                  (cons (car l)
+                                        (append (cdr l) s))))))
+             (list
+              (append nil nil)
+              (append (cons 1 nil) (cons 2 nil))
+              (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+          expr)
+      (!-/evalo expr type val))
+    '((((letrec ((append (lambda (l s) (if (null? l) s (cons (car l) (append (cdr l) s)))))) (list (append nil nil) (append (cons 1 nil) (cons 2 nil)) (append (cons 3 (cons 4 nil)) (cons 5 (cons 6 nil)))))
+        (list (list int))
+        (nil
+         (cons 1 (cons 2 nil))
+         (cons 3 (cons 4 (cons 5 (cons 6 nil)))))))))
+
   
  )
 
