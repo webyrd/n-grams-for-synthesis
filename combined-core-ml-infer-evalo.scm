@@ -271,18 +271,17 @@
           (oro `(,e2 . ,e-rest) gamma env val)))))))
 
 
-
+(define empty-gamma '())
 (define empty-env '())
 
 (define (!-/evalo expr type val)
   (!-/eval-expo expr empty-gamma empty-env type val 'top-level))
 
-;; WEB--is this actually used???
-#|
+
 (define (alist-ref alist element failure-result)
   (let ((pr (assoc element alist)))
     (if pr (cdr pr) failure-result)))
-|#
+
 
 ;;; !!! Careful!
 ;;;

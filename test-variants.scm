@@ -29,9 +29,9 @@
                           ;;; inferencers should be run separately.
 
                           #| Combined inferencer/evaluator for ML-like language |#
-                          ;"combined-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer-evalo.scm"
-                          "combined-dynamic-ordering-ml-infer-evalo.scm"
-                          ;"combined-expert-ordering-ml-infer-evalo.scm"
+                          ;"combined-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer-evalo"
+                          "combined-dynamic-ordering-ml-infer-evalo"
+                          ;"combined-expert-ordering-ml-infer-evalo"
                           
                           
                           #| Separate evaluators/inferencers for ML-like language, curried: |#
