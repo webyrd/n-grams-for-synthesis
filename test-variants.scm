@@ -29,7 +29,7 @@
                           ;;; inferencers should be run separately.
 
                           #| Combined inferencer/evaluator for ML-like language |#
-                          ;"combined-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer-evalo"
+                          "combined-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer-evalo"
                           "combined-dynamic-ordering-ml-infer-evalo"
                           ;"combined-expert-ordering-ml-infer-evalo"
                           
@@ -58,13 +58,12 @@
                           
                           #| Interpreters for ML-like language: |#
                           
-                          ; "variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
+                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations-ml"
                           ;"variant-dynamic-ordering-ml"
                           ;"variant-expert-ordering-with-application-and-lookup-optimizations-ml"
                           
                           #|
-                          "variant-dynamic-ordering-with-application-optimization-ml"
-                          
+                          "variant-dynamic-ordering-with-application-optimization-ml"                          
                           "variant-expert-ordering-with-application-optimization-ml"
                           "variant-expert-ordering-ml"                          
                           |#
