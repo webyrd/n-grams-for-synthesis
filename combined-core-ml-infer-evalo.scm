@@ -1,30 +1,30 @@
 ;; ML-ish version of the interpreter, based on joint work with Kanae Tsushima.
 
-(define (bool-!-/evalo expr gamma env type val)
+(define (bool-!-/evalo expr gamma env type val context)
   (conde
     ((== #t expr) (== 'bool type) (== #t val))
     ((== #f expr) (== 'bool type) (== #f val))))
 
-(define (num-!-/evalo expr gamma env type val)
+(define (num-!-/evalo expr gamma env type val context)
   (fresh ()
     (numbero expr)
     (== 'int type)
     (== expr val)))
 
-(define (nil-!-/evalo expr gamma env type val)
+(define (nil-!-/evalo expr gamma env type val context)
   (fresh ()
     (== 'nil expr)
     (== 'nil val)
     (fresh (alpha)
       (== `(list ,alpha) type))))
 
-(define (var-!-/evalo expr gamma env type val)
+(define (var-!-/evalo expr gamma env type val context)
   (fresh ()
     (symbolo expr)
     (=/= 'nil expr)
-    (lookup-!-/evalo expr gamma env type val)))
+    (lookup-!-/evalo expr gamma env type val context)))
 
-(define (null?-!-/evalo expr gamma env type val)
+(define (null?-!-/evalo expr gamma env type val context)
   (fresh (e alpha v)
     (== `(null? ,e) expr)
     (== 'bool type)
@@ -33,19 +33,19 @@
       ((=/= 'nil v) (== #f val)))
     (!-/eval-expo e gamma env `(list ,alpha) v 'null?)))
 
-(define (car-!-/evalo expr gamma env type val)
+(define (car-!-/evalo expr gamma env type val context)
   (fresh (e alpha d)
     (== `(car ,e) expr)
     (== alpha type)
     (!-/eval-expo e gamma env `(list ,alpha) `(cons ,val ,d) 'car)))
 
-(define (cdr-!-/evalo expr gamma env type val)
+(define (cdr-!-/evalo expr gamma env type val context)
   (fresh (e alpha a)
     (== `(cdr ,e) expr)
     (== `(list ,alpha) type)
     (!-/eval-expo e gamma env `(list ,alpha) `(cons ,a ,val) 'cdr)))
 
-(define (cons-!-/evalo expr gamma env type val)
+(define (cons-!-/evalo expr gamma env type val context)
   (fresh (e1 e2 alpha v1 v2)
     (== `(cons ,e1 ,e2) expr)
     (== `(list ,alpha) type)
@@ -53,7 +53,7 @@
     (!-/eval-expo e2 gamma env `(list ,alpha) v2 'cons-e2)
     (!-/eval-expo e1 gamma env alpha v1 'cons-e1)))
 
-(define (pair-!-/evalo expr gamma env type val)
+(define (pair-!-/evalo expr gamma env type val context)
   (fresh (e1 e2 t1 t2 v1 v2)
     (== `(pair ,e1 ,e2) expr)
     (== `(pair ,t1 ,t2) type)
@@ -61,7 +61,7 @@
     (!-/eval-expo e1 gamma env t1 v1 'pair-e1)
     (!-/eval-expo e2 gamma env t2 v2 'pair-e2)))
 
-(define (if-!-/evalo expr gamma env type val)
+(define (if-!-/evalo expr gamma env type val context)
   (fresh (e1 e2 e3 t)
     (== `(if ,e1 ,e2 ,e3) expr)
     (!-/eval-expo e1 gamma env 'bool t 'if-test)
@@ -69,7 +69,7 @@
       ((== #t t) (!-/eval-expo e2 gamma env type val 'if-conseq))
       ((== #f t) (!-/eval-expo e3 gamma env type val 'if-alt)))))
 
-(define (letrec-!-/evalo expr gamma env type val)
+(define (letrec-!-/evalo expr gamma env type val context)
   (fresh (p-name x body letrec-body t)
     ;; single-function muti-argument letrec version
     (== `(letrec ((,p-name (lambda ,x ,body)))
@@ -86,14 +86,14 @@
                   val
                   'letrec-body)))
 
-(define (lambda-!-/evalo expr gamma env type val)
+(define (lambda-!-/evalo expr gamma env type val context)
   (fresh (x body t t^)
     (== `(lambda ,x ,body) expr)
     (== `(-> ,t ,t^) type)
     (== `(closure (lambda ,x ,body) ,gamma ,env) val)
     (list-of-symbolso x)))
 
-(define (app-!-/evalo expr gamma env type val)
+(define (app-!-/evalo expr gamma env type val context)
   (fresh (rator x* rands body gamma^ gamma^^ env^ env^^ a* t t*)
     (== `(,rator . ,rands) expr)
     ;; Multi-argument
@@ -108,7 +108,7 @@
 
 
 
-(define (equal?-!-/evalo expr gamma env type val)
+(define (equal?-!-/evalo expr gamma env type val context)
   (fresh (e1 e2 t v1 v2)
     (== `(equal? ,e1 ,e2) expr)
     (== 'bool type)
@@ -118,26 +118,26 @@
     (!-/eval-expo e1 gamma env t v1 'equal?-e1)
     (!-/eval-expo e2 gamma env t v2 'equal?-e2)))
 
-(define (and-!-/evalo expr gamma env type val)
+(define (and-!-/evalo expr gamma env type val context)
   (fresh (e*)
     (== `(and . ,e*) expr)
     (== 'bool type)
     (ando e* gamma env val)))
 
-(define (or-!-/evalo expr gamma env type val)
+(define (or-!-/evalo expr gamma env type val context)
   (fresh (e*)
     (== `(or . ,e*) expr)
     (== 'bool type)
     (oro e* gamma env val)))
 
-(define (list-!-/evalo expr gamma env type val)
+(define (list-!-/evalo expr gamma env type val context)
   (fresh (rands alpha a*)
     (== `(list . ,rands) expr)
     (== `(list ,alpha) type)
     (== a* val)
     (eval-listo rands gamma env alpha a*)))
 
-(define (symbol?-!-/evalo expr gamma env type val)
+(define (symbol?-!-/evalo expr gamma env type val context)
   (fresh (e t v)
     (== `(symbol? ,e) expr)
     (== 'bool type)
@@ -155,7 +155,7 @@
     ((fresh (a d)
        (== `(,a . ,d) t)))))
 
-(define (not-!-/evalo expr gamma env type val)
+(define (not-!-/evalo expr gamma env type val context)
   (fresh (e v)
     (== `(not ,e) expr)
     (== 'bool type)
@@ -168,7 +168,7 @@
 
 
 
-(define (lookup-!-/evalo x gamma env type val)
+(define (lookup-!-/evalo x gamma env type val context)
   (fresh (y t v rest-gamma rest-env)
     (symbolo x)
     (== `((,y . ,t) . ,rest-gamma) gamma)
@@ -185,7 +185,7 @@
               (== `(poly ,gamma^ ,lam-expr) t))
             (== `(closure ,lam-expr ,gamma ,env) val)))))
       ((=/= x y)
-       (lookup-!-/evalo x rest-gamma rest-env type val)))))
+       (lookup-!-/evalo x rest-gamma rest-env type val context)))))
 
 (define (!-/eval-randso expr* gamma env type* val*)
   (conde
@@ -392,7 +392,7 @@
 ;;;
 ;;; (Is there a better way to write this???)
 (define (lookup-!-/evalo-k k)
-  (lambda (x gamma env type val)
+  (lambda (x gamma env type val context)
     (conde
       ((== '() gamma)
        (== '() env)
@@ -413,10 +413,10 @@
                    (== `(poly ,gamma^ ,lam-expr) t))
                  (== `(closure ,lam-expr ,gamma ,env) val)))))
            ((=/= x y)
-            ((lookup-!-/evalo-k k) x rest-gamma rest-env type val))))))))
+            ((lookup-!-/evalo-k k) x rest-gamma rest-env type val context))))))))
 
 (define build-and-run-conde
-  (lambda (expr gamma env type val list-of-eval-relations)
+  (lambda (expr gamma env type val context list-of-eval-relations)
     (let ((k (lambdag@ (st)
                (inc (bind (state-depth-deepen (state-with-scope st (new-scope)))
                           (lambdag@ (st)
@@ -424,8 +424,8 @@
                               (cond
                                 ((null? list-of-eval-relations) (mzero))
                                 (else
-                                 (mplus (((car list-of-eval-relations) expr gamma env type val) st)
+                                 (mplus (((car list-of-eval-relations) expr gamma env type val context) st)
                                         (inc (loop (cdr list-of-eval-relations)))))))))))))
       (if lookup-optimization?
-          ((lookup-!-/evalo-k k) expr gamma env type val)
+          ((lookup-!-/evalo-k k) expr gamma env type val context)
           k))))

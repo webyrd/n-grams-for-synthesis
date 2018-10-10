@@ -50,7 +50,7 @@
         expert-ordering-ml-!-/evalo))))
 
 (define (!-/eval-expo expr gamma env type val context)
-  (build-and-run-conde expr gamma env type val
+  (build-and-run-conde expr gamma env type val context
                        (order-eval-relations context)
                        ;expert-ordering
                        ))
