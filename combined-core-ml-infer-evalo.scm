@@ -88,9 +88,14 @@
 
 (define (lambda-!-/evalo expr gamma env type val context)
   (fresh (x body t t^)
-    (project (context)
+    (project (expr gamma env type val context)
       (begin
+        (printf "expr: ~s\n" expr)
+        (printf "gamma: ~s\n" gamma)
+        (printf "env: ~s\n" env)
+        (printf "val: ~s\n"  val)
         (printf "context: ~s\n" context)
+        (printf "----------------\n")
         (== #t #t)))
     (=/= 'app-rator context)
     (== `(lambda ,x ,body) expr)
