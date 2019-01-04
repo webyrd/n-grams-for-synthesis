@@ -3,6 +3,7 @@
 * Add more testcases to simple-interp
 * Have way to split out short/medium/long running tests
 * Keep track of which corpora a model (ngram) was trained on
+* Experiment with K-L divergence, as suggested by Edward Kmett
 
 
 Possibly relevant paper:
