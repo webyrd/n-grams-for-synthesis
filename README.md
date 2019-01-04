@@ -74,6 +74,8 @@ The ideas explored in this repo are inspired by conversations and hacking sessio
 
 This latest attempt at n-gram-based guided search was inspired by Rob Zinkov hosting Will Byrd at University of Oxford in January of 02018.  Rob has been hacking on getting a larger corpus of trainign programs, while Will has been working on how to better integrate the resulting probabilities into the relational interpreters.
 
+Kanae Tsushima (対馬かなえ) of the National Institute of Informatics (NII) in Tokyo has been collaborating closely with Will Byrd on integrating types, templates, and other techniques into synthesis.
+
 Many thanks to everyone who has helped improve the ideas and code!
 
 TODO
