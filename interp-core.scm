@@ -140,28 +140,64 @@
     ((proceduro e) (force-thunko e t))
     ((not-proceduro e) (== t e) (== t v))))
 
-(define (interleave-loopo e1 e2 env v1 v2)
-  (fresh (t1 t2)
+(define (for-oneo p notp es)
+  (fresh (a d)
+    (== (cons a d) es)
     (conde
-      ((not-proceduro e1)
-       (not-proceduro e2)
-       (== e1 v1)
-       (== e2 v2))
-      ((conde
-         ((proceduro e1))
-         ((not-proceduro e1)
-          (proceduro e2)))
-       (interleave-steppo e1 t1 v1)
-       (interleave-steppo e2 t2 v2)
-       (interleave-loopo t1 t2 env v1 v2)))))
+      ((p a))
+      ((notp a)
+       (for-oneo p notp d)))))
+
+(define (for-eacho p es)
+  (conde
+    ((== '() es))
+    ((fresh (a d)
+       (== (cons a d) es)
+       (p a)
+       (for-eacho p d)))))
+
+(define (for-eacho2 p es1 es2)
+  (conde
+    ((== '() es1)
+     (== '() es2))
+    ((fresh (a1 a2 d1 d2)
+       (== (cons a1 d1) es1)
+       (== (cons a2 d2) es2)
+       (p a1 a2)
+       (for-eacho2 p d1 d2)))))
+
+(define (for-eacho3 p es1 es2 es3)
+  (conde
+    ((== '() es1)
+     (== '() es2)
+     (== '() es3))
+    ((fresh (a1 a2 a3 d1 d2 d3)
+       (== (cons a1 d1) es1)
+       (== (cons a2 d2) es2)
+       (== (cons a3 d3) es3)
+       (p a1 a2 a3)
+       (for-eacho3 p d1 d2 d3)))))
+
+(define (interleave-loopo es env vs)
+  (conde
+    ((for-eacho not-proceduro es)
+     (for-eacho2 (lambda (e v) (== e v)) es vs))
+    ((for-oneo proceduro not-proceduro es)
+     (fresh (ts)
+       (for-eacho3
+        (lambda (e t v)
+          (interleave-steppo e t v))
+        es ts vs)
+       (interleave-loopo ts env vs)))))
 
 (define (interleave-evalo expr env val)
-  (fresh (e1 e2 c1 c2 v1 v2)
-    (== `(interleave ,e1 ,e2) expr)
-    (== `(,v1 ,v2) val)
-    (eval-expo e1 env c1 'interleave)
-    (eval-expo e2 env c2 'interleave)
-    (interleave-loopo c1 c2 env v1 v2)))
+  (fresh (es cs)
+    (== `(interleave . ,es) expr)
+    (for-eacho2
+     (lambda (e c)
+       (eval-expo e env c 'interleave))
+     es cs)
+    (interleave-loopo cs env val)))
 
 (define (not-evalo expr env val)
   (fresh (e v)
