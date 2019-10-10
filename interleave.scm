@@ -154,8 +154,7 @@
         (revi '() '())
         (revi '(a) '(b))
         (revi '(c) '(d))
-        (revi '(e f) '(g h))))
-    '(() (a b) (c d) (f e g h))))
- '(((if (null? s)
-        s
-        (if (null? (cdr s)) (cons (car l) s) '(f e g h))))))
+        (revi '(e f) '(g h))
+        (revi '(a b c) '(g h))))
+    '(() (a b) (c d) (f e g h) (c b a g h))))
+ '(((if (null? l) s (revi (cdr l) (cons (car l) s))))))
