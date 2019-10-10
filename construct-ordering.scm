@@ -16,6 +16,8 @@
     (or . ,or-evalo)
     (list . ,list-evalo)
     (symbol? . ,symbol?-evalo)
+    (procedure? . ,procedure?-evalo)
+    (interleave . ,interleave-evalo)
     (not . ,not-evalo)
     (letrec . ,letrec-evalo)
     (match . ,match-evalo)))

@@ -107,6 +107,62 @@
       ((not-symbolo v) (== #f val)))
     (eval-expo e env v 'symbol?)))
 
+(define (not-proceduro v)
+    (conde
+      ((symbolo v))
+      ((== #f v))
+      ((== #t v))
+      ((== '() v))
+      ((numbero v))
+      ((fresh (a d)
+         (== `(,a . ,d) v)
+         (=/= a 'closure)))))
+
+(define (proceduro v)
+  (fresh (d)
+  (== `(closure . ,d) v)))
+
+(define (procedure?-evalo expr env val)
+  (fresh (e v)
+    (== `(procedure? ,e) expr)
+    (conde
+      ((proceduro v) (== val #t))
+      ((not-proceduro v) (== val #f)))
+    (eval-expo e env v 'procedure?)))
+
+(define (force-thunko e t)
+  (fresh (lam-expr env)
+    (== `(closure ,lam-expr ,env) e)
+    (eval-expo `(,lam-expr) env t 'interleave)))
+
+(define (interleave-steppo e t v)
+  (conde
+    ((proceduro e) (force-thunko e t))
+    ((not-proceduro e) (== t e) (== t v))))
+
+(define (interleave-loopo e1 e2 env v1 v2)
+  (fresh (t1 t2)
+    (conde
+      ((not-proceduro e1)
+       (not-proceduro e2)
+       (== e1 v1)
+       (== e2 v2))
+      ((conde
+         ((proceduro e1))
+         ((not-proceduro e1)
+          (proceduro e2)))
+       (interleave-steppo e1 t1 v1)
+       (interleave-steppo e2 t2 v2)
+       (interleave-loopo t1 t2 env v1 v2)))))
+
+(define (interleave-evalo expr env val)
+  (fresh (e1 e2 c1 c2 v1 v2)
+    (== `(interleave ,e1 ,e2) expr)
+    (== `(,v1 ,v2) val)
+    (eval-expo e1 env c1 'interleave)
+    (eval-expo e2 env c2 'interleave)
+    (interleave-loopo c1 c2 env v1 v2)))
+
 (define (not-evalo expr env val)
   (fresh (e v)
     (== `(not ,e) expr)
