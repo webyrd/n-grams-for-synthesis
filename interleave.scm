@@ -101,3 +101,61 @@
              (interleave (lambda () 2) (omega) (lambda () 3)))
           (list 1 q 3)))
  '())
+
+(eg
+ "interleave-like-list"
+ (run 2 (q)
+   (evalo '(interleave 1 2) q))
+ '(((1 2))))
+
+(eg
+ "interleave-like-list-append"
+ (run 2 (q)
+   (evalo
+    '(letrec ((append
+               (lambda (l s)
+                 (if (null? l)
+                     s
+                     (cons (car l) (append (cdr l) s))))))
+       (interleave
+        (append '() '())
+        (append '(a) '(b))
+        (append '(c) '(d))
+        (append '(e f) '(g h))))
+    q))
+ '(((() (a b) (c d) (e f g h)))))
+
+(eg
+ "interleave-forward-revi"
+ (run 2 (q)
+   (evalo
+    '(letrec ((revi
+               (lambda (l s)
+                 (lambda ()
+                   (if (null? l)
+                       s
+                       (revi (cdr l) (cons (car l) s)))))))
+       (interleave
+        (revi '() '())
+        (revi '(a) '(b))
+        (revi '(c) '(d))
+        (revi '(e f) '(g h))))
+    q))
+ '(((() (a b) (c d) (f e g h)))))
+
+(eg
+ "baseline-backward-revi"
+ (run 1 (q)
+   (evalo
+    `(letrec ((revi
+               (lambda (l s)
+                 ,q)))
+       (list
+        (revi '() '())
+        (revi '(a) '(b))
+        (revi '(c) '(d))
+        (revi '(e f) '(g h))))
+    '(() (a b) (c d) (f e g h))))
+ '(((if (null? s)
+        s
+        (if (null? (cdr s)) (cons (car l) s) '(f e g h))))))
