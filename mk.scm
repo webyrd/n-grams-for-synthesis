@@ -250,7 +250,7 @@
          (state (state-S st) (state-C st) (state-depth st) #f (state-M st)))
         st))))
 
-(define (empty-state) (state empty-subst empty-C 0 (and enable-conde1? '())))
+(define (empty-state) (state empty-subst empty-C 0 (and enable-conde1? '()) '()))
 
 (define state-with-scope
   (lambda (st new-scope)

@@ -30,7 +30,7 @@
 
                           #| Combined inferencer/evaluator for ML-like language |#
                           ;"combined-dynamic-ordering-with-application-and-lookup-optimizations-ml-infer-evalo"
-                          "combined-dynamic-ordering-ml-infer-evalo"
+                          ;"combined-dynamic-ordering-ml-infer-evalo"
                           ;"combined-expert-ordering-ml-infer-evalo"
                           
                           
@@ -72,7 +72,7 @@
                           
                           #| Interpreters for Schemely language: |#
 
-                          ;"variant-dynamic-ordering-with-application-and-lookup-optimizations"
+                          "variant-dynamic-ordering-with-application-and-lookup-optimizations"
                           ;"variant-barliman-interpreter"
                           
                           #|
