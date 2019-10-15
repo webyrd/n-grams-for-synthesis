@@ -8,6 +8,24 @@
 
  10
 
+(printf "this test is bad news!  n should not be 0\n")
+(test "numbero-required-with-=/=-1"
+  (run 10 (n m p)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '((('0 '0 '16)) (('1 '0 '16)) (('2 '0 '16)) (('3 '0 '16)) (('4 '0 '16))
+    (('5 '0 '16)) (('6 '0 '16)) (('7 '0 '16)) (('8 '0 '16))
+    (('3 '-1 '19))))
+ 
+(test "numbero-required-with-=/=-2"
+  (run 10 (n m p)
+    (numbero n)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((1 '-1 '17)) ((2 '-1 '18)) ((3 '-1 '19)) ((4 '-1 '20)) ((2 '-2 '20))
+    ((5 '-1 '21)) ((3 '-2 '22)) ((4 '-2 '24)) ((5 '-2 '26))
+    ((6 '-2 '28))))
+ 
 (test "synthesize length from examples"
   (run 1 (q)
     (evalo `(letrec ((length
