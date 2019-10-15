@@ -32,6 +32,16 @@
     (z/assert `(= ,val (- ,n 1)))
     (eval-expo e env n 'sub1)))
 
+(define (+-evalo expr env val)
+  (fresh (e1 e2 n1 n2)
+    (== `(+ ,e1 ,e2) expr)
+    (numbero n1)
+    (numbero n2)
+    (numbero val)
+    (z/assert `(= ,val (+ ,n1 ,n2)))
+    (eval-expo e1 env n1 '+)
+    (eval-expo e2 env n2 '+)))
+
 (define (*-evalo expr env val)
   (fresh (e1 e2 n1 n2)
     (== `(* ,e1 ,e2) expr)

@@ -8,6 +8,7 @@
     (app . ,app-evalo)
     (zero? . ,zero?-evalo)
     (sub1 . ,sub1-evalo)
+    (+ . ,+-evalo)
     (* . ,*-evalo)
     (car . ,car-evalo)
     (cdr . ,cdr-evalo)

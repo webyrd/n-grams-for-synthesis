@@ -8,6 +8,23 @@
 
  10
 
+(test "synthesize length from examples"
+  (run 1 (q)
+    (evalo `(letrec ((length
+                      (lambda (l)
+                        ,q)))
+              (list (length '())
+                    (length '(f))
+                    (length '(g h))
+                    (length '(a b c d e))))
+           '(0
+             1
+             2
+             5)))
+  (((if (null? l)
+        0
+        (+ '1 (length (cdr l)))))))
+ 
 
 ;; append->fold-right
 ;; TODO build up to full synthesis
