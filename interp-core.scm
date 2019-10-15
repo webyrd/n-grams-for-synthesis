@@ -14,6 +14,34 @@
     (numbero expr)
     (== expr val)))
 
+
+(define (zero?-evalo expr env val)
+  (fresh (e n)
+    (== `(zero? ,e) expr)
+    (numbero n)
+    (conde
+      ((z/assert `(= ,n 0)) (== val #t))
+      ((z/assert `(not (= ,n 0))) (== val #f)))
+    (eval-expo e env n 'zero?)))
+
+(define (sub1-evalo expr env val)
+  (fresh (e n)
+    (== `(sub1 ,e) expr)
+    (numbero n)
+    (numbero val)
+    (z/assert `(= ,val (- ,n 1)))
+    (eval-expo e env n 'sub1)))
+
+(define (*-evalo expr env val)
+  (fresh (e1 e2 n1 n2)
+    (== `(* ,e1 ,e2) expr)
+    (numbero n1)
+    (numbero n2)
+    (numbero val)
+    (z/assert `(= ,val (* ,n1 ,n2)))
+    (eval-expo e1 env n1 '*)
+    (eval-expo e2 env n2 '*)))
+
 (define (bool-evalo expr env val)
   (conde
     ((== #t expr) (== #t val))

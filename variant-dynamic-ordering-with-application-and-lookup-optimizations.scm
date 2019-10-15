@@ -10,4 +10,4 @@
 (load "interp-app-optimization.scm")
 (load "construct-ordering.scm")
 (load "interp-simplified-dynamic.scm")
-(load "simplified-interp-tests.scm")
+;(load "simplified-interp-tests.scm")
