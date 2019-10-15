@@ -1387,3 +1387,5 @@
       ,move-T-to-D-b/c-t2-atom ,split-t-move-to-d-b/c-pair
       ,drop-from-D-b/c-T ,drop-t-b/c-t2-occurs-t1)))
 
+(load "../faster-miniKanren/smt.scm")
+(load "../clpsmt-miniKanren/z3-server.scm")
