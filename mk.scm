@@ -141,7 +141,7 @@
 ;   A - list of absento constraints. Each constraint is a ground atom. The list contains
 ;           no duplicates.
 
-(define empty-c `(#f () ()))
+(define empty-c `(#f () () #f))
 
 (define c-T
   (lambda (c)
@@ -155,17 +155,25 @@
   (lambda (c)
     (caddr c)))
 
+(define c-M
+  (lambda (c)
+    (cadddr c)))
+
 (define c-with-T
   (lambda (c T)
-    (list T (c-D c) (c-A c))))
+    (list T (c-D c) (c-A c) (c-M c))))
 
 (define c-with-D
   (lambda (c D)
-    (list (c-T c) D (c-A c))))
+    (list (c-T c) D (c-A c) (c-M c))))
 
 (define c-with-A
   (lambda (c A)
-    (list (c-T c) (c-D c) A)))
+    (list (c-T c) (c-D c) A (c-M c))))
+
+(define c-with-M
+  (lambda (c M)
+    (list (c-T c) (c-D c) (c-A c) M)))
 
 ; Constraint store object.
 ; Mapping of representative variable to constraint record. Constraints are
@@ -189,24 +197,37 @@
   ; Is this a reasonable depth for typical Barliman problems?
   100)
 
+#|
 (define state
-  (lambda (S C depth deferred)
-    (list S C depth deferred)))
+  (lambda (S C depth deferred M)
+    (list S C depth deferred M)))
+|#
+
+(define state
+  (lambda args
+    (when (not (= (length args) 5))
+      (printf "state called with ~s args: ~s\n" (length args) args)
+      (error 'state ""))
+    args))
 
 (define state-S (lambda (st) (car st)))
 (define state-C (lambda (st) (cadr st)))
 (define state-depth (lambda (st) (caddr st)))
 (define state-deferred (lambda (st) (cadddr st)))
+(define state-M (lambda (st) (car (cddddr st))))
+(define state-with-M
+  (lambda (st M)
+    (state (state-S st) (state-C st) (state-depth st) (state-deferred st) M)))
 (define state-depth-set
   (lambda (st depth)
-    (state (state-S st) (state-C st) depth (state-deferred st))))
+    (state (state-S st) (state-C st) depth (state-deferred st) (state-M st))))
 (define state-depth-deepen
   (lambda (st)
     (let ((next-depth (+ 1 (state-depth st))))
       (if (and allow-incomplete-search?
                max-search-depth (< max-search-depth next-depth))
         (mzero)
-        (state (state-S st) (state-C st) next-depth (state-deferred st))))))
+        (state (state-S st) (state-C st) next-depth (state-deferred st) (state-M st))))))
 (define state-deferred-defer
   (lambda (st goal)
     (let ((deferred (state-deferred st)))
@@ -214,7 +235,8 @@
         (state (state-S st)
                (state-C st)
                (state-depth st)
-               (cons goal (state-deferred st)))
+               (cons goal (state-deferred st))
+               (state-M st))
         (goal st)))))
 (define state-deferred-resume
   (lambda (st)
@@ -225,7 +247,7 @@
                         (bind (g0 st) g1)))
                     unit
                     deferred)
-         (state (state-S st) (state-C st) (state-depth st) #f))
+         (state (state-S st) (state-C st) (state-depth st) #f (state-M st)))
         st))))
 
 (define (empty-state) (state empty-subst empty-C 0 (and enable-conde1? '())))
@@ -235,7 +257,8 @@
     (state (subst-with-scope (state-S st) new-scope)
            (state-C st)
            (state-depth st)
-           (state-deferred st))))
+           (state-deferred st)
+           (state-M st))))
 
 ; Unification
 
@@ -365,9 +388,10 @@
 (define-syntax run
   (syntax-rules ()
     ((_ n (q) g0 g ...)
+     (z/reset!)
      (take n
        (inc
-         ((fresh (q) g0 g ... state-deferred-resume
+         ((fresh (q) g0 g ... state-deferred-resume z/purge
             (lambdag@ (st)
               (let ((st (state-with-scope st nonlocal-scope)))
                 (let ((z ((reify q) st)))
@@ -627,7 +651,7 @@
         (if S
           (and-foldl
             update-constraints
-            (state S (state-C st) (state-depth st) (state-deferred st)) added)
+            (state S (state-C st) (state-depth st) (state-deferred st) (state-M st)) added)
           (mzero))))))
 
 
@@ -646,6 +670,9 @@
             (if (eq? (c-T old-c) 'numbero)
               (list (numbero (rhs a)))
               '())
+            (if (c-M old-c)
+                (list (z/assert (list '= (lhs a) (rhs a)) #t))
+                '())
             (map (lambda (atom) (absento atom (rhs a))) (c-A old-c))
             (map (lambda (d) (=/=* d)) (c-D old-c)))))))))
 
