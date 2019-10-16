@@ -8,8 +8,8 @@
 
  10
 
-(printf "this test is bad news!  n should not be 0\n")
 (test "numbero-required-with-=/=-1"
+  ;; this test is bad news!  n should not be 0
   (run 10 (n m p)
     (=/= n 0)
     (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
@@ -39,9 +39,9 @@
              1
              2
              5)))
-  (((if (null? l)
-        0
-        (+ '1 (length (cdr l)))))))
+  '(((if (null? l)
+         0
+         (+ '1 (length (cdr l)))))))
  
 
 ;; append->fold-right
