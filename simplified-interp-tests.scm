@@ -8,7 +8,7 @@
 
  10
 
-(test "numbero-required-with-=/=-1"
+(test "broken-numbero-required-with-=/=-1"
   ;; this test is bad news!  n should not be 0
   (run 10 (n m p)
     (=/= n 0)
