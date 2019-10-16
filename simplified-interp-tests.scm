@@ -8,6 +8,80 @@
 
  10
 
+(test "broken-numbero-required-with-=/=-1"
+  ;; this test is bad news!  n should not be 0
+  (run 10 (n m p)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '((('0 '0 '16))
+    (('0 '1 '16))
+    (('0 '2 '16))
+    (('0 '3 '16))
+    (('0 '4 '16))
+    (('0 '5 '16))
+    (('0 '6 '16))
+    (('0 '7 '16))
+    (('-1 '3 '19))
+    (('-1 '4 '20))))
+
+(test "numbero-required-with-=/=-2"
+  (run 10 (n m p)
+    (numbero n)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((-1 '-2 '14))
+    ((-2 '-2 '12))
+    ((-3 '-2 '10))
+    ((-4 '-2 '8))
+    ((-5 '-2 '6))
+    ((-6 '-2 '4))
+    ((-7 '-2 '2))
+    ((-7 '-3 '-5))
+    ((-8 '-3 '-8))
+    ((-9 '-3 '-11))))
+
+(test "numbero-required-with-=/=-3"
+  ;; Look--no quotes when we add the numbero constraints!!
+  ;; Why???
+  (run 10 (n m p)
+    (numbero n)
+    (numbero m)
+    (numbero p)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((1 0 16))
+    ((2 0 16))
+    ((3 0 16))
+    ((4 0 16))
+    ((5 0 16))
+    ((6 0 16))
+    ((7 0 16))
+    ((8 0 16))
+    ((9 0 16))
+    ((10 0 16))))
+
+(test "numbero-required-with-=/=-4"
+  ;; Look--no quotes when we add the numbero constraints!!
+  ;; Why???
+  (run 10 (n m p)
+    (numbero n)
+    (numbero m)
+    (numbero p)
+    (=/= n 0)
+    (=/= m 0)
+    (=/= p 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((121 1 -105))
+    ((121 2 -226))
+    ((121 3 -347))
+    ((182 2 -348))
+    ((183 2 -350))
+    ((184 2 -352))
+    ((185 2 -354))
+    ((186 2 -356))
+    ((187 2 -358))
+    ((188 2 -360))))
+
 (test "synthesize length from examples"
   (run 1 (q)
     (evalo `(letrec ((length
@@ -21,9 +95,9 @@
              1
              2
              5)))
-  (((if (null? l)
-        0
-        (+ '1 (length (cdr l)))))))
+  '(((if (null? l)
+         0
+         (+ '1 (length (cdr l)))))))
  
 
 ;; append->fold-right
