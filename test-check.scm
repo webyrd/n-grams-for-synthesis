@@ -33,6 +33,8 @@
                                                               'failure)))
                                    (list success-indicator title 'tested-expression 'pred-expr produced (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))
                                (lambda (stats-diff)
+                                 ;;(z3-reset!)
+                                 (z/reset!)
                                  (list 'timeout title 'tested-expression 'pred-expr 'timeout (time->inexact-seconds (sstats-real stats-diff)) (sstats-bytes stats-diff))))))))))
 
 (define-syntax test
