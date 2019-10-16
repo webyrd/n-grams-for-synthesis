@@ -534,12 +534,6 @@
         (if (o< n m)
             0
             (add1 (o/ (o- n m) m)))))
-
-    (define olength
-      (lambda (lat)
-        (if (null? lat)
-            0
-            (add1 (olength (cdr lat))))))
     
     (define pick
       (lambda (n lat)

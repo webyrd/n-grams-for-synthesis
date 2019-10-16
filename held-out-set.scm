@@ -17,4 +17,10 @@
             ls2
             (cons (car ls1) (append (cdr ls1) ls2)))))
 
+    (define olength
+      (lambda (lat)
+        (if (null? lat)
+            0
+            (add1 (olength (cdr lat))))))
+    
     ))
