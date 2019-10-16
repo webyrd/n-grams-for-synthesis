@@ -39,7 +39,49 @@
     ((-7 '-3 '-5))
     ((-8 '-3 '-8))
     ((-9 '-3 '-11))))
- 
+
+(test "numbero-required-with-=/=-3"
+  ;; Look--no quotes when we add the numbero constraints!!
+  ;; Why???
+  (run 10 (n m p)
+    (numbero n)
+    (numbero m)
+    (numbero p)
+    (=/= n 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((1 0 16))
+    ((2 0 16))
+    ((3 0 16))
+    ((4 0 16))
+    ((5 0 16))
+    ((6 0 16))
+    ((7 0 16))
+    ((8 0 16))
+    ((9 0 16))
+    ((10 0 16))))
+
+(test "numbero-required-with-=/=-4"
+  ;; Look--no quotes when we add the numbero constraints!!
+  ;; Why???
+  (run 10 (n m p)
+    (numbero n)
+    (numbero m)
+    (numbero p)
+    (=/= n 0)
+    (=/= m 0)
+    (=/= p 0)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t))
+  '(((121 1 -105))
+    ((121 2 -226))
+    ((121 3 -347))
+    ((182 2 -348))
+    ((183 2 -350))
+    ((184 2 -352))
+    ((185 2 -354))
+    ((186 2 -356))
+    ((187 2 -358))
+    ((188 2 -360))))
+
 (test "synthesize length from examples"
   (run 1 (q)
     (evalo `(letrec ((length
