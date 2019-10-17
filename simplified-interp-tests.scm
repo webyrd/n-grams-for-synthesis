@@ -77,6 +77,26 @@
     ((-9 -1 7))
     ((-10 -1 6))))
 
+(test "numbero-required-with-=/=-4b"
+  (run 10 (n m p)
+    (numbero n)
+    (numbero m)
+    (numbero p)
+    (evalo `(equal? (+ (* ,n ,m) ,p) 16) #t)
+    (=/= n 0)
+    (=/= m 0)
+    (=/= p 0))
+  '(((-1 -1 15))
+    ((-2 -1 14))
+    ((-3 -1 13))
+    ((-4 -1 12))
+    ((-5 -1 11))
+    ((-6 -1 10))
+    ((-7 -1 9))
+    ((-8 -1 8))
+    ((-9 -1 7))
+    ((-10 -1 6))))
+
 (test "synthesize length from examples"
   (run 1 (q)
     (evalo `(letrec ((length
