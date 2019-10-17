@@ -115,6 +115,41 @@
          (+ '1 (length (cdr l)))))))
  
 
+(test "synthesize length from examples gensyms"
+  (run 1 (q)
+    (let ((g1 (gensym "g1"))
+          (g2 (gensym "g2"))
+          (g3 (gensym "g3"))
+          (g4 (gensym "g4"))
+          (g5 (gensym "g5"))
+          (g6 (gensym "g6"))
+          (g7 (gensym "g7"))
+          (g8 (gensym "g8")))
+      (fresh ()
+        (absento g1 q)
+        (absento g2 q)
+        (absento g3 q)
+        (absento g4 q)
+        (absento g5 q)
+        (absento g6 q)
+        (absento g7 q)
+        (absento g8 q)
+        (evalo `(letrec ((length
+                          (lambda (l)
+                            ,q)))
+                  (list (length '())
+                        (length '(,g1))
+                        (length '(,g2 ,g3))
+                        (length '(,g4 ,g5 ,g6 ,g7 ,g8))))
+               '(0
+                 1
+                 2
+                 5)))))
+  '(((if (null? l)
+         0
+         (+ '1 (length (cdr l)))))))
+
+
 ;; append->fold-right
 ;; TODO build up to full synthesis
 
