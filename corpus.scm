@@ -402,12 +402,12 @@
 
     ;;;  Simple recursive Scheme functions (Little Schemer Style)
 
-    (define foldr
-      (lambda (f base ls)
-        (if (null? ls)
-            base 
-            (f (car ls) 
-               (foldr f base (cdr ls))))))
+    ;(define foldr
+    ;  (lambda (f base ls)
+    ;    (if (null? ls)
+    ;        base 
+    ;        (f (car ls) 
+    ;           (foldr f base (cdr ls))))))
 
     (define foldl
       (lambda (f base ls)
