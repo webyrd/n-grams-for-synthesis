@@ -1,0 +1,45 @@
+\begin{thebibliography}{1}
+\providecommand{\bibitemdeclare}[2]{}
+\providecommand{\surnamestart}{}
+\providecommand{\surnameend}{}
+\providecommand{\urlprefix}{Available at }
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\href}[2]{\texttt{#2}}
+\providecommand{\urlalt}[2]{\href{#1}{#2}}
+\providecommand{\doi}[1]{doi:\urlalt{http://dx.doi.org/#1}{#1}}
+\providecommand{\bibinfo}[2]{#2}
+
+\bibitemdeclare{article}{byrd2017unified}
+\bibitem{byrd2017unified}
+\bibinfo{author}{William~E \surnamestart Byrd\surnameend},
+  \bibinfo{author}{Michael \surnamestart Ballantyne\surnameend},
+  \bibinfo{author}{Gregory \surnamestart Rosenblatt\surnameend} \&
+  \bibinfo{author}{Matthew \surnamestart Might\surnameend}
+  (\bibinfo{year}{2017}): \emph{\bibinfo{title}{A unified approach to solving
+  seven programming problems (functional pearl)}}.
+\newblock {\sl \bibinfo{journal}{Proceedings of the ACM on Programming
+  Languages}} \bibinfo{volume}{1}(\bibinfo{number}{ICFP}),
+  p.~\bibinfo{pages}{8}.
+
+\bibitemdeclare{inproceedings}{lee2018accelerating}
+\bibitem{lee2018accelerating}
+\bibinfo{author}{Woosuk \surnamestart Lee\surnameend}, \bibinfo{author}{Kihong
+  \surnamestart Heo\surnameend}, \bibinfo{author}{Rajeev \surnamestart
+  Alur\surnameend} \& \bibinfo{author}{Mayur \surnamestart Naik\surnameend}
+  (\bibinfo{year}{2018}): \emph{\bibinfo{title}{Accelerating search-based
+  program synthesis using learned probabilistic models}}.
+\newblock In: {\sl \bibinfo{booktitle}{Proceedings of the 39th ACM SIGPLAN
+  Conference on Programming Language Design and Implementation}},
+  \bibinfo{organization}{ACM}, pp. \bibinfo{pages}{436--449}.
+
+\bibitemdeclare{inproceedings}{zaremba2014learning}
+\bibitem{zaremba2014learning}
+\bibinfo{author}{Wojciech \surnamestart Zaremba\surnameend},
+  \bibinfo{author}{Karol \surnamestart Kurach\surnameend} \&
+  \bibinfo{author}{Rob \surnamestart Fergus\surnameend} (\bibinfo{year}{2014}):
+  \emph{\bibinfo{title}{Learning to discover efficient mathematical
+  identities}}.
+\newblock In: {\sl \bibinfo{booktitle}{Advances in Neural Information
+  Processing Systems}}, pp. \bibinfo{pages}{1278--1286}.
+
+\end{thebibliography}
