@@ -107,41 +107,13 @@ per context. These counts are then saved into a table that our
 implementation of $\textbf{cond}^e$ accesses selecting clauses from
 most to least probable, thus guaranteeing the search stays complete.
 
+\begin{figure}[htb!]
+\centering
+\includegraphics[scale=1.0]{drawing.pdf}
+\caption{Overview of the system}
+\label{fig:overview}
+\end{figure}
 
-\begingroup%
-  \makeatletter%
-  \providecommand\rotatebox[2]{#2}%
-  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
-  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
-  \ifx\svgwidth\undefined%
-    \setlength{\unitlength}{425.02170307bp}%
-    \ifx\svgscale\undefined%
-      \relax%
-    \else%
-      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
-    \fi%
-  \else%
-    \setlength{\unitlength}{\svgwidth}%
-  \fi%
-  \global\let\svgwidth\undefined%
-  \global\let\svgscale\undefined%
-  \makeatother%
-  \begin{picture}(1,0.46524061)%
-    \lineheight{1}%
-    \setlength\tabcolsep{0pt}%
-    \put(0,0){\includegraphics[width=\unitlength]{drawing.eps}}%
-    \put(0.0,0.45067733){
-      \makebox(0,0)[lt]{\lineheight{1.25}\small{
-          \begin{tabular}[t]{l}\tt{(define zip\\
-          \tt\quad (lambda (ls1 ls2)\\
-          \tt\quad \quad (if (null? ls1)\\
-          \tt\quad \quad \quad '()\\
-          \tt\quad \quad \quad (cons (cons (car ls1) (list (car ls2)))\\
-          \tt\quad \quad \quad \quad (zip (cdr ls1) (cdr ls2))))))}\\
-          \end{tabular}}}}%
-    \put(0.61319071,0.42245986){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}(((app-rand* cdr) . 2)\\ ((app-rator var) . 1)\\ ((car var) . 2)\\ ((cdr var) . 2)\\ ((cons-e1 car) . 1)\\ ((cons-e1 cons) . 1)\\ ((cons-e2 app) . 1)\\ ((cons-e2 list) . 1)\\ ((if-alt cons) . 1)\\ ((if-conseq quoted-datum) . 1)\\ ((if-test null?) . 1)\\ ((lambda if) . 1)\\ ((letrec-rhs lambda) . 1)\\ ((list car) . 1)\\ ((null? var) . 1)\\ ((top-level letrec) . 1))\\\end{tabular}}}}%
-  \end{picture}%
-\endgroup%
 
 \section{Experiments}
 
