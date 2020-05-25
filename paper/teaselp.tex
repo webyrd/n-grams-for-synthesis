@@ -72,9 +72,9 @@ the best ordering could be different from call to call.
 
 To deal with this issue we take a cue from existing machine learning
 work\cite{zaremba2014learning,lee2018accelerating} and learn a search
-heuristic to guide the search. More specifically, we learn a
-probabilistic model to choose which clause to pick given the context the
-choices exist within.
+heuristic to guide the search. More specifically, as outlined in
+\Cref{fig:overview} we learn a probabilistic model to choose which
+clause to pick given the context the choices exist within.
 
 As an example consider a grammar like the lambda-calculus. Suppose we
 are trying to generate the operand $e_2$ of a function application. We
